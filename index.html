@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UFO Sightings Data Matrix</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- D3 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+
+    <header class="header">
+        <div class="date" id="current-date"></div>
+        <h1>UFO SIGHTINGS DATA MATRIX V2.0</h1>
+        <div class="version">UFO DATABASE V2.0</div>
+    </header>
+
+    <nav class="modes">
+        <button class="mode active">GLYPH</button>
+        <button class="mode">MAP</button>
+        <button class="mode">TIMELINE</button>
+        <button class="mode">RADIAL</button>
+        <button class="mode">HEATMAP</button>
+        <button class="mode">SPIRAL</button>
+        <button class="mode">BAR</button>
+        <button class="mode">SCATTER</button>
+        <button class="mode">POLAR</button>
+    </nav>
+
+    <main class="layout">
+        
+        <!-- Left: Filters -->
+        <aside class="filters">
+            <h2>Filters</h2>
+
+            <!-- COUNTRIES -->
+            <div class="filter-section">
+                <h3>Countries</h3>
+                <div id="filter-countries" class="tag-container"></div>
+            </div>
+
+            <!-- SHAPES -->
+            <div class="filter-section">
+                <h3>Shapes</h3>
+                <div id="filter-shapes" class="tag-container"></div>
+            </div>
+
+            <!-- YEAR RANGE -->
+            <div class="filter-section">
+                <h3>> YEAR: 
+                    <span id="year-label-min">1949</span> - 
+                    <span id="year-label-max">2024</span>
+                </h3>
+
+                <div class="range-container">
+                    <input type="range" id="year-min" min="1949" max="2024" value="1949">
+                    <input type="range" id="year-max" min="1949" max="2024" value="2024">
+                </div>
+
+                <div class="range-values">
+                    <span id="year-val-min">1949</span>
+                    <span id="year-val-max" class="right">2024</span>
+                </div>
+            </div>
+
+            <!-- DURATION RANGE -->
+            <div class="filter-section">
+                <h3>> DURATION: 
+                    <span id="dur-label-min">0</span> - 
+                    <span id="dur-label-max">120</span> MIN
+                </h3>
+
+                <div class="range-container">
+                    <input type="range" id="duration-min" min="0" max="120" value="0">
+                    <input type="range" id="duration-max" min="0" max="120" value="120">
+                </div>
+
+                <div class="range-values">
+                    <span id="dur-val-min">0M</span>
+                    <span id="dur-val-max" class="right">120M</span>
+                </div>
+            </div>
+
+            <!-- COUNTER -->
+            <div class="filter-section">
+                <p>SHOWING: <span id="showing-count">0</span></p>
+                <p>TOTAL: <span id="total-count">0</span></p>
+            </div>
+
+            <!-- SORTING -->
+            <div class="filter-section">
+                <h3>Sort By</h3>
+                <select id="sort-select" class="retro-select">
+                    <option value="newest">Newest → Oldest</option>
+                    <option value="oldest">Oldest → Newest</option>
+                    <option value="durationHigh">Longest Duration</option>
+                    <option value="durationLow">Shortest Duration</option>
+                    <option value="countryAZ">Country A → Z</option>
+                    <option value="cityAZ">City A → Z</option>
+                    <option value="shapeAZ">Shape A → Z</option>
+                </select>
+            </div>
+        </aside>
+
+        <!-- Right: Visual Data Matrix -->
+        <section class="matrix">
+            <h2>Visual Data Matrix</h2>
+            <div id="glyph-grid"></div>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+
+    <!-- Tooltip -->
+    <div id="tooltip" class="tooltip"></div>
+
+</body>
+</html>
