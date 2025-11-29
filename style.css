@@ -1,3 +1,13 @@
+/* GLOBAL SETTINGS & VARIABLES */
+* {
+    box-sizing: border-box; /* Crucial for Grid Math */
+}
+
+:root {
+    --cell-size: 40px;
+    --gap-size: 6px;
+}
+
 body {
     margin: 0;
     background: black;
@@ -6,7 +16,6 @@ body {
 }
 
 /* HEADER */
-
 .header {
     display: flex;
     justify-content: space-between;
@@ -20,13 +29,13 @@ body {
     font-size: 32px;
 }
 
-/* MODES */
-
+/* MODES NAV */
 .modes {
     border-bottom: 2px solid #f8c200;
     padding: 10px;
     display: flex;
     gap: 10px;
+    overflow-x: auto; /* Safety for mobile */
 }
 
 .mode {
@@ -37,32 +46,59 @@ body {
     cursor: pointer;
     font-family: inherit;
     font-size: 16px;
+    transition: 0.2s;
 }
 
-.mode.active {
+.mode:hover, .mode.active {
     background: #f8c200;
     color: black;
 }
 
 /* MAIN LAYOUT */
-
 .layout {
     display: grid;
     grid-template-columns: 280px 1fr;
     min-height: calc(100vh - 90px);
 }
 
-/* FILTERS */
-
+/* FILTERS SIDEBAR */
 .filters {
     border-right: 2px solid #f8c200;
     padding: 15px;
     box-sizing: border-box;
 }
 
-.filters h2 {
+/* NEW: Filter Header (Title + Stats) */
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f8c200;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+}
+
+.filter-header h2 {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1;
+}
+
+.filter-stats {
+    text-align: right;
+    font-size: 16px;
+    color: #f8c200;
+    line-height: 1.2;
+}
+
+.filter-stats span {
+    color: #fff; /* White numbers to pop */
+}
+
+.filters h3 {
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+    font-size: 20px;
 }
 
 .filter-section {
@@ -76,7 +112,6 @@ body {
 }
 
 /* TAGS */
-
 .tag {
     padding: 3px 8px;
     border: 1px solid #f8c200;
@@ -85,47 +120,21 @@ body {
     font-size: 16px;
 }
 
-.tag:hover {
+.tag:hover, .tag.active {
     background: #004fff;
     color: white;
     border-color: #004fff;
 }
 
-.tag.active {
-    background: #004fff;
-    color: white;
-    border-color: #004fff;
-}
-
-/* SORT DROPDOWN */
-
-.retro-select {
-    background: black;
-    color: #f8c200;
-    border: 1px solid #f8c200;
-    padding: 6px 8px;
-    font-family: "VT323", monospace;
-    font-size: 16px;
-    width: 100%;
-    cursor: pointer;
-}
-
-.retro-select:hover {
-    background: #222;
-}
-
-.retro-select:focus {
-    outline: none;
-    background: #333;
-}
-
-/* DOUBLE SLIDERS */
-
+/* DOUBLE SLIDERS (FIXED) */
 .range-container {
     position: relative;
     width: 100%;
-    height: 22px;
+    height: 30px;
     margin-top: 10px;
+    /* Track Line */
+    background: linear-gradient(to bottom, transparent 40%, #f8c200 40%, #f8c200 60%, transparent 60%);
+    z-index: 1;
 }
 
 .range-container input[type="range"] {
@@ -133,42 +142,146 @@ body {
     appearance: none;
     width: 100%;
     position: absolute;
-    pointer-events: none;
-    height: 12px;
-    background: transparent;
-    margin: 0;
     top: 50%;
     transform: translateY(-50%);
-}
-
-.range-container input[type="range"]::-webkit-slider-runnable-track {
-    height: 12px;
-    background: #f8c200;
+    margin: 0;
+    background: transparent;
+    pointer-events: none; /* Allows clicking through input to the one below */
+    z-index: 2;
 }
 
 .range-container input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    pointer-events: all;
-    width: 22px;
-    height: 22px;
+    pointer-events: auto; /* Re-enable pointer events on thumb */
+    width: 20px;
+    height: 20px;
     background: black;
     border: 2px solid #f8c200;
     border-radius: 50%;
     cursor: pointer;
-    margin-top: -5px;
+    position: relative;
+    z-index: 3;
+}
+
+.range-container input[type="range"]::-moz-range-thumb {
+    pointer-events: auto;
+    width: 20px;
+    height: 20px;
+    background: black;
+    border: 2px solid #f8c200;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    z-index: 3;
+}
+
+.range-container input[type="range"]:focus {
+    outline: none;
 }
 
 .range-values {
     display: flex;
     justify-content: space-between;
-    margin-top: 22px;
+    margin-top: 5px;
+    font-size: 18px;
+    color: #f8c200;
+}
+
+/* CUSTOM RETRO DROPDOWN */
+select#sort-select {
+    display: none; /* Hide default select */
+}
+
+.custom-select-wrapper {
+    position: relative;
+    user-select: none;
+    width: 100%;
+    font-family: "VT323", monospace;
     font-size: 18px;
 }
 
-/* MATRIX – MOSAIC GRID */
+.custom-select-trigger {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: black;
+    color: #f8c200;
+    padding: 8px 12px;
+    border: 1px solid #f8c200;
+    cursor: pointer;
+    transition: 0.2s;
+}
 
+.custom-select-trigger:hover {
+    background: #111;
+}
+
+.arrow {
+    position: relative;
+    height: 10px;
+    width: 10px;
+}
+.arrow::before, .arrow::after {
+    content: "";
+    position: absolute;
+    bottom: 0px;
+    width: 0.15rem;
+    height: 100%;
+    transition: all 0.2s;
+}
+.arrow::before { left: -3px; transform: rotate(-45deg); background-color: #f8c200; }
+.arrow::after { left: 3px; transform: rotate(45deg); background-color: #f8c200; }
+
+.custom-options {
+    position: absolute;
+    display: block;
+    top: 100%; /* Opens Downwards */
+    left: 0;
+    right: 0;
+    border: 1px solid #f8c200;
+    border-top: 0;
+    background: black;
+    transition: all 0.2s;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 999;
+}
+
+.custom-select-wrapper.open .custom-options {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+}
+
+.custom-select-wrapper.open .custom-select-trigger {
+    background: #222;
+}
+
+.custom-select-wrapper.open .arrow::before { transform: rotate(-135deg); }
+.custom-select-wrapper.open .arrow::after { transform: rotate(135deg); }
+
+.custom-option {
+    position: relative;
+    display: block;
+    padding: 8px 12px;
+    border-bottom: 1px solid #333;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.custom-option:last-of-type { border-bottom: 0; }
+.custom-option:hover { background: #f8c200; color: black; }
+.custom-option.selected { color: #f8c200; font-weight: bold; }
+.custom-option.selected:hover { color: black; }
+
+
+/* MATRIX – MOSAIC GRID */
 .matrix {
     padding: 20px;
+    background: #000;
 }
 
 .matrix h2 {
@@ -178,10 +291,12 @@ body {
 
 #glyph-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, 48px);
-    grid-auto-rows: 48px;
-    grid-auto-flow: dense;
-    gap: 6px;
+    /* Uses variables defined in :root */
+    grid-auto-rows: var(--cell-size); 
+    gap: var(--gap-size);
+    margin: 0 auto;
+    position: relative;
+    padding-bottom: 50px;
 }
 
 .glyph {
@@ -191,24 +306,21 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-
-    border: 1px solid #333;
+    
+    border: 1px solid #333; /* Border is INSIDE the box size now */
     box-shadow: 0 0 0 1px #111 inset;
     background: rgba(0, 0, 0, 0.3);
 }
 
 /* FILLER TILES */
-
 .filler {
-    width: 48px;
-    height: 48px;
+    width: 100%;
+    height: 100%;
     background: #f8c200;
     border: 1px solid #333;
-    box-shadow: 0 0 0 1px #111 inset;
 }
 
 /* TOOLTIP */
-
 .tooltip {
     position: fixed;
     background: black;
@@ -219,10 +331,8 @@ body {
     font-size: 16px;
     pointer-events: none;
     white-space: pre-line;
-
     width: 260px;
     max-width: 260px;
-
     opacity: 0;
     transition: opacity 0.1s ease-out;
     z-index: 9999;

@@ -30,10 +30,9 @@ const countryColors = {
 const cellSizeMap = {
     short:  { cols: 1, rows: 1 },
     medium: { cols: 2, rows: 2 },
-    long:   { cols: 3, rows: 3 },
+    long:   { cols: 3, rows: 3 }, // RESTORED: Now we have 3 sizes!
     unknown:{ cols: 1, rows: 1 }
 };
-
 // ----------------------------------------------------
 // LOAD DATA
 // ----------------------------------------------------
@@ -58,7 +57,7 @@ d3.json("data/ufo_sample_500_clean.json").then(data => {
 // FILTER TAGS
 // ----------------------------------------------------
 function initFilters() {
-    const countryList = ["us", "gb", "ca", "au", "de"];
+    const countryList = ["us", "gb", "ca", "au"];
     const shapeList = [
         "circle", "disk", "light", "fireball",
         "sphere", "triangle", "formation", "cylinder", "unknown"
@@ -332,60 +331,179 @@ function hideTooltip() {
 }
 
 // ----------------------------------------------------
-// GRID UPDATE (MOSAIC USING GRID SPANS + FILLERS)
+// GRID UPDATE (HYBRID: TIERS FOR DURATION, MIXED FOR OTHERS)
 // ----------------------------------------------------
 function updateGrid() {
     const grid = d3.select("#glyph-grid");
+    const container = grid.node().parentNode;
+    const sortMode = document.getElementById("sort-select").value; // Get current sort
 
+    // 1. Update Counts
     d3.select("#showing-count").text(filtered.length);
     d3.select("#total-count").text(rawData.length);
 
-    // Remove old fillers first
-    grid.selectAll(".filler").remove();
+    // 2. Calculate Grid Dimensions (Force Multiples of 6)
+    const availableWidth = container.getBoundingClientRect().width - 40; 
+    const cellPixelSize = 40; 
+    const gapSize = 6;
+    const colTotal = cellPixelSize + gapSize;
 
-    // --- Render REAL glyphs ---
-    const items = grid.selectAll(".glyph")
-        .data(filtered); // IMPORTANT: no key → order follows sorted array
+    let maxPossibleCols = Math.floor(availableWidth / colTotal);
+    let numCols = Math.floor(maxPossibleCols / 6) * 6; 
+    if (numCols < 6) numCols = Math.floor(maxPossibleCols / 2) * 2; 
+    if (numCols < 1) numCols = 1;
 
-    items.exit().remove();
+    // Force CSS width
+    const finalGridWidth = (numCols * colTotal) - gapSize;
+    grid.style("grid-template-columns", `repeat(${numCols}, ${cellPixelSize}px)`)
+        .style("width", `${finalGridWidth}px`);
 
-    const enter = items.enter()
-        .append("div")
-        .attr("class", "glyph")
-        .html(d => drawGlyph(d))
-        .on("mousemove", (event, d) => showTooltip(event, d))
-        .on("mouseleave", hideTooltip);
+    // 3. COMMON PACKING HELPERS
+    let gridMap = [];   
+    let displayList = []; 
+    
+    // Initialize Map
+    const estimatedRows = Math.ceil(filtered.length * 2); 
+    const mapSize = numCols * estimatedRows + (numCols * 20); 
+    for(let i=0; i<mapSize; i++) gridMap[i] = false;
 
-    items.merge(enter)
-        .each(function(d) {
-            const size = cellSizeMap[d.durationCategory] || cellSizeMap.unknown;
-            d3.select(this)
-                .style("grid-column", `span ${size.cols}`)
-                .style("grid-row", `span ${size.rows}`);
-        })
-        .html(d => drawGlyph(d));
+    let gridCursor = 0;
 
-    // --- CREATE FILLERS (yellow squares) ---
-    const gridWidth = grid.node().getBoundingClientRect().width;
-    const columns = Math.max(1, Math.floor(gridWidth / 48));
+    function markRegion(index, size) {
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                let markIndex = index + (r * numCols) + c;
+                gridMap[markIndex] = true;
+            }
+        }
+    }
 
-    let usedCells = 0;
-    filtered.forEach(d => {
-        const size = cellSizeMap[d.durationCategory] || cellSizeMap.unknown;
-        usedCells += size.cols * size.rows;
-    });
+    function canFit(index, size) {
+        const colIndex = index % numCols;
+        if (colIndex + size > numCols) return false; 
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                let checkIndex = index + (r * numCols) + c;
+                if (gridMap[checkIndex]) return false; 
+            }
+        }
+        return true;
+    }
 
-    const rows = Math.ceil(usedCells / columns);
-    const totalCells = rows * columns;
-    const fillersNeeded = Math.max(0, totalCells - usedCells);
+    function forceLineBreak() {
+        const colIndex = gridCursor % numCols;
+        if (colIndex !== 0) { 
+            const slotsToFill = numCols - colIndex;
+            for(let i=0; i<slotsToFill; i++) {
+                 if (!gridMap[gridCursor]) {
+                     const colStart = (gridCursor % numCols) + 1;
+                     const rowStart = Math.floor(gridCursor / numCols) + 1;
+                     markRegion(gridCursor, 1);
+                     displayList.push({
+                        type: 'filler',
+                        style: `grid-column: ${colStart} / span 1; grid-row: ${rowStart} / span 1;`
+                     });
+                 }
+                 gridCursor++;
+            }
+        }
+    }
 
-    const fillerArray = Array(fillersNeeded).fill(null);
+    // GENERIC PLACEMENT FUNCTION (Used by both modes)
+    function processDataList(listToProcess) {
+        let cursor = 0;
+        while (cursor < listToProcess.length) {
+            if (gridCursor + (4 * numCols) >= gridMap.length) {
+                for(let k=0; k < numCols * 10; k++) gridMap.push(false);
+            }
 
-    grid.selectAll(".filler")
-        .data(fillerArray)
+            if (gridMap[gridCursor]) {
+                gridCursor++;
+                continue;
+            }
+
+            const d = listToProcess[cursor];
+            
+            // Determine size
+            let size = cellSizeMap[d.durationCategory] ? cellSizeMap[d.durationCategory].cols : 1;
+            if (size > numCols) size = numCols;
+
+            if (canFit(gridCursor, size)) {
+                // PLACE DATA
+                const colStart = (gridCursor % numCols) + 1;
+                const rowStart = Math.floor(gridCursor / numCols) + 1;
+                markRegion(gridCursor, size);
+                displayList.push({
+                    type: 'data',
+                    data: d,
+                    style: `grid-column: ${colStart} / span ${size}; grid-row: ${rowStart} / span ${size};`
+                });
+                cursor++; 
+            } else {
+                // FILLER
+                const colStart = (gridCursor % numCols) + 1;
+                const rowStart = Math.floor(gridCursor / numCols) + 1;
+                markRegion(gridCursor, 1);
+                displayList.push({
+                    type: 'filler',
+                    style: `grid-column: ${colStart} / span 1; grid-row: ${rowStart} / span 1;`
+                });
+            }
+            gridCursor++;
+        }
+    }
+
+    // 4. DECISION: WHICH LAYOUT TO USE?
+
+    if (sortMode === "durationHigh" || sortMode === "durationLow") {
+        // --- STRATEGY A: TIERED LAYOUT (Strict Buckets) ---
+        
+        // 1. Bucket the data
+        let tier3 = [];
+        let tier2 = [];
+        let tier1 = [];
+
+        filtered.forEach(d => {
+            let cols = cellSizeMap[d.durationCategory] ? cellSizeMap[d.durationCategory].cols : 1;
+            if (cols > numCols) cols = numCols;
+            if (cols === 3) tier3.push(d);
+            else if (cols === 2) tier2.push(d);
+            else tier1.push(d);
+        });
+
+        // 2. Process strictly in order (Large -> Medium -> Small) or reverse if Low->High
+        if (sortMode === "durationHigh") {
+            // High to Low: 3 -> 2 -> 1
+            if (tier3.length > 0) { processDataList(tier3); forceLineBreak(); }
+            if (tier2.length > 0) { processDataList(tier2); forceLineBreak(); }
+            if (tier1.length > 0) { processDataList(tier1); }
+        } else {
+            // Low to High: 1 -> 2 -> 3
+            // (Usually low duration means small size, so we start with small)
+            if (tier1.length > 0) { processDataList(tier1); forceLineBreak(); }
+            if (tier2.length > 0) { processDataList(tier2); forceLineBreak(); }
+            if (tier3.length > 0) { processDataList(tier3); }
+        }
+
+    } else {
+        // --- STRATEGY B: STANDARD MIXED LAYOUT ---
+        // Just process the filtered list as-is (respecting Newest, A-Z, etc.)
+        processDataList(filtered);
+    }
+
+    // 5. Render
+    grid.html("");
+    const items = grid.selectAll(".item")
+        .data(displayList)
         .enter()
         .append("div")
-        .attr("class", "filler");
+        .attr("class", d => d.type === 'data' ? "glyph" : "filler")
+        .attr("style", d => d.style);
+
+    items.filter(d => d.type === 'data')
+        .html(d => drawGlyph(d.data))
+        .on("mousemove", (event, d) => showTooltip(event, d.data))
+        .on("mouseleave", hideTooltip);
 }
 
 // ----------------------------------------------------
@@ -404,3 +522,76 @@ ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,
 
 setInterval(updateClock, 1000);
 updateClock();
+
+// ----------------------------------------------------
+// CUSTOM DROPDOWN INIT (Replaces default <select>)
+// ----------------------------------------------------
+function initCustomDropdown() {
+    const originalSelect = document.getElementById("sort-select");
+    if (!originalSelect) return;
+
+    // 1. Create the wrapper
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("custom-select-wrapper");
+    originalSelect.parentNode.insertBefore(wrapper, originalSelect);
+    wrapper.appendChild(originalSelect); // Move original select inside (it will be hidden)
+
+    // 2. Create the Trigger (The visible button)
+    const trigger = document.createElement("div");
+    trigger.classList.add("custom-select-trigger");
+    trigger.innerHTML = `
+        <span>${originalSelect.options[originalSelect.selectedIndex].text}</span>
+        <div class="arrow"></div>
+    `;
+    wrapper.appendChild(trigger);
+
+    // 3. Create the Options Container
+    const optionsList = document.createElement("div");
+    optionsList.classList.add("custom-options");
+    wrapper.appendChild(optionsList);
+
+    // 4. Populate Options
+    for (const option of originalSelect.options) {
+        const customOption = document.createElement("span");
+        customOption.classList.add("custom-option");
+        customOption.dataset.value = option.value;
+        customOption.textContent = option.text;
+        
+        if (option.selected) {
+            customOption.classList.add("selected");
+        }
+
+        // Handle Click Selection
+        customOption.addEventListener("click", function() {
+            // Update Visuals
+            trigger.querySelector("span").textContent = this.textContent;
+            wrapper.querySelectorAll(".custom-option").forEach(opt => opt.classList.remove("selected"));
+            this.classList.add("selected");
+            wrapper.classList.remove("open");
+
+            // Sync with Original Select
+            originalSelect.value = this.dataset.value;
+            
+            // Trigger Change Event (so your sorting logic runs!)
+            const event = new Event('change');
+            originalSelect.dispatchEvent(event);
+        });
+
+        optionsList.appendChild(customOption);
+    }
+
+    // 5. Toggle Open/Close
+    trigger.addEventListener("click", function() {
+        wrapper.classList.toggle("open");
+    });
+
+    // 6. Close when clicking outside
+    document.addEventListener("click", function(e) {
+        if (!wrapper.contains(e.target)) {
+            wrapper.classList.remove("open");
+        }
+    });
+}
+
+// CALL THE FUNCTION
+initCustomDropdown();

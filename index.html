@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UFO Sightings Data Matrix</title>
 
-    <!-- CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
 
-    <!-- D3 -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 
@@ -34,23 +34,26 @@
 
     <main class="layout">
         
-        <!-- Left: Filters -->
         <aside class="filters">
-            <h2>Filters</h2>
+            
+            <div class="filter-header">
+                <h2>FILTERS</h2>
+                <div class="filter-stats">
+                    <div>SHOWING: <span id="showing-count">0</span></div>
+                    <div>TOTAL: <span id="total-count">0</span></div>
+                </div>
+            </div>
 
-            <!-- COUNTRIES -->
             <div class="filter-section">
                 <h3>Countries</h3>
                 <div id="filter-countries" class="tag-container"></div>
             </div>
 
-            <!-- SHAPES -->
             <div class="filter-section">
                 <h3>Shapes</h3>
                 <div id="filter-shapes" class="tag-container"></div>
             </div>
 
-            <!-- YEAR RANGE -->
             <div class="filter-section">
                 <h3>> YEAR: 
                     <span id="year-label-min">1949</span> - 
@@ -68,7 +71,6 @@
                 </div>
             </div>
 
-            <!-- DURATION RANGE -->
             <div class="filter-section">
                 <h3>> DURATION: 
                     <span id="dur-label-min">0</span> - 
@@ -86,13 +88,6 @@
                 </div>
             </div>
 
-            <!-- COUNTER -->
-            <div class="filter-section">
-                <p>SHOWING: <span id="showing-count">0</span></p>
-                <p>TOTAL: <span id="total-count">0</span></p>
-            </div>
-
-            <!-- SORTING -->
             <div class="filter-section">
                 <h3>Sort By</h3>
                 <select id="sort-select" class="retro-select">
@@ -107,7 +102,6 @@
             </div>
         </aside>
 
-        <!-- Right: Visual Data Matrix -->
         <section class="matrix">
             <h2>Visual Data Matrix</h2>
             <div id="glyph-grid"></div>
@@ -115,10 +109,8 @@
 
     </main>
 
-    <!-- Scripts -->
     <script src="script.js"></script>
 
-    <!-- Tooltip -->
     <div id="tooltip" class="tooltip"></div>
 
 </body>
