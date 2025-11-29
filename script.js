@@ -1,18 +1,19 @@
 // ----------------------------------------------------
-// UFO DATA MATRIX — FULL JAVASCRIPT ENGINE
-// (Mosaic grid + filters + sorting + fillers + tooltip)
+// UFO DATA MATRIX — FULL ENGINE V2.0
+// (Hybrid Grid + Retro Map + Custom UI)
 // ----------------------------------------------------
 
 let rawData = [];
 let filtered = [];
+let currentView = "glyph";
 
 // Sets for filters
 let activeCountries = new Set();
 let activeShapes = new Set();
 
 // Slider values
-let yearMin = 1949;
-let yearMax = 2024;
+let yearMin = 1945;
+let yearMax = 2015;
 let durMin = 0;
 let durMax = 120;
 
@@ -26,13 +27,14 @@ const countryColors = {
     unknown: "#999999"
 };
 
-// Duration category → cell size (in grid spans)
+// Duration category → cell size logic
 const cellSizeMap = {
     short:  { cols: 1, rows: 1 },
     medium: { cols: 2, rows: 2 },
-    long:   { cols: 3, rows: 3 }, // RESTORED: Now we have 3 sizes!
+    long:   { cols: 3, rows: 3 },
     unknown:{ cols: 1, rows: 1 }
 };
+
 // ----------------------------------------------------
 // LOAD DATA
 // ----------------------------------------------------
@@ -49,15 +51,19 @@ d3.json("data/ufo_sample_500_clean.json").then(data => {
 
     initFilters();
     initSliders();
+    initCustomDropdown();
     setupSortingListener();
-    applyFilters(); // initial pass (applies sorting + grid)
+    
+    // Initial Render
+    applyFilters();
 });
 
 // ----------------------------------------------------
 // FILTER TAGS
 // ----------------------------------------------------
 function initFilters() {
-    const countryList = ["us", "gb", "ca", "au"];
+
+    const countryList = ["us", "gb", "ca", "au"]; 
     const shapeList = [
         "circle", "disk", "light", "fireball",
         "sphere", "triangle", "formation", "cylinder", "unknown"
@@ -103,49 +109,92 @@ function initSliders() {
     const durMinSlider = document.getElementById("duration-min");
     const durMaxSlider = document.getElementById("duration-max");
 
-    // YEAR MIN
-    yearMinSlider.oninput = () => {
+    function updateYear() {
         yearMin = Math.min(parseInt(yearMinSlider.value), parseInt(yearMaxSlider.value) - 1);
-        yearMinSlider.value = yearMin;
-
-        document.getElementById("year-label-min").textContent = yearMin;
-        document.getElementById("year-val-min").textContent = yearMin;
-
-        applyFilters();
-    };
-
-    // YEAR MAX
-    yearMaxSlider.oninput = () => {
         yearMax = Math.max(parseInt(yearMinSlider.value) + 1, parseInt(yearMaxSlider.value));
+        
+        yearMinSlider.value = yearMin;
         yearMaxSlider.value = yearMax;
 
+        document.getElementById("year-label-min").textContent = yearMin;
         document.getElementById("year-label-max").textContent = yearMax;
+        document.getElementById("year-val-min").textContent = yearMin;
         document.getElementById("year-val-max").textContent = yearMax;
 
         applyFilters();
-    };
+    }
 
-    // DURATION MIN
-    durMinSlider.oninput = () => {
+    function updateDur() {
         durMin = Math.min(parseInt(durMinSlider.value), parseInt(durMaxSlider.value) - 1);
-        durMinSlider.value = durMin;
-
-        document.getElementById("dur-label-min").textContent = durMin;
-        document.getElementById("dur-val-min").textContent = durMin + "M";
-
-        applyFilters();
-    };
-
-    // DURATION MAX
-    durMaxSlider.oninput = () => {
         durMax = Math.max(parseInt(durMinSlider.value) + 1, parseInt(durMaxSlider.value));
+        
+        durMinSlider.value = durMin;
         durMaxSlider.value = durMax;
 
+        document.getElementById("dur-label-min").textContent = durMin;
         document.getElementById("dur-label-max").textContent = durMax;
+        document.getElementById("dur-val-min").textContent = durMin + "M";
         document.getElementById("dur-val-max").textContent = durMax + "M";
 
         applyFilters();
-    };
+    }
+
+    yearMinSlider.oninput = updateYear;
+    yearMaxSlider.oninput = updateYear;
+    durMinSlider.oninput = updateDur;
+    durMaxSlider.oninput = updateDur;
+}
+
+// ----------------------------------------------------
+// CUSTOM DROPDOWN UI (Replaces standard Select)
+// ----------------------------------------------------
+function initCustomDropdown() {
+    const originalSelect = document.getElementById("sort-select");
+    if (!originalSelect) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("custom-select-wrapper");
+    originalSelect.parentNode.insertBefore(wrapper, originalSelect);
+    wrapper.appendChild(originalSelect);
+
+    const trigger = document.createElement("div");
+    trigger.classList.add("custom-select-trigger");
+    trigger.innerHTML = `
+        <span>${originalSelect.options[originalSelect.selectedIndex].text}</span>
+        <div class="arrow"></div>
+    `;
+    wrapper.appendChild(trigger);
+
+    const optionsList = document.createElement("div");
+    optionsList.classList.add("custom-options");
+    wrapper.appendChild(optionsList);
+
+    for (const option of originalSelect.options) {
+        const customOption = document.createElement("span");
+        customOption.classList.add("custom-option");
+        customOption.dataset.value = option.value;
+        customOption.textContent = option.text;
+        
+        if (option.selected) customOption.classList.add("selected");
+
+        customOption.addEventListener("click", function() {
+            trigger.querySelector("span").textContent = this.textContent;
+            wrapper.querySelectorAll(".custom-option").forEach(opt => opt.classList.remove("selected"));
+            this.classList.add("selected");
+            wrapper.classList.remove("open");
+
+            originalSelect.value = this.dataset.value;
+            const event = new Event('change');
+            originalSelect.dispatchEvent(event);
+        });
+
+        optionsList.appendChild(customOption);
+    }
+
+    trigger.addEventListener("click", () => wrapper.classList.toggle("open"));
+    document.addEventListener("click", (e) => {
+        if (!wrapper.contains(e.target)) wrapper.classList.remove("open");
+    });
 }
 
 // ----------------------------------------------------
@@ -157,7 +206,8 @@ function setupSortingListener() {
 
     select.addEventListener("change", () => {
         applySorting();
-        updateGrid();
+        if (currentView === "glyph") updateGrid();
+        else updateMap(); 
     });
 }
 
@@ -172,30 +222,14 @@ function applySorting() {
         const bTime = b.datetimeParsed ? b.datetimeParsed.getTime() : 0;
 
         switch(mode) {
-
-            case "newest":
-                return bTime - aTime;
-
-            case "oldest":
-                return aTime - bTime;
-
-            case "durationHigh":
-                return (b.durationSeconds || 0) - (a.durationSeconds || 0);
-
-            case "durationLow":
-                return (a.durationSeconds || 0) - (b.durationSeconds || 0);
-
-            case "countryAZ":
-                return (a.country || "").localeCompare(b.country || "");
-
-            case "cityAZ":
-                return (a.city || "").localeCompare(b.city || "");
-
-            case "shapeAZ":
-                return (a.shape || "").localeCompare(b.shape || "");
-
-            default:
-                return 0;
+            case "newest": return bTime - aTime;
+            case "oldest": return aTime - bTime;
+            case "durationHigh": return (b.durationSeconds || 0) - (a.durationSeconds || 0);
+            case "durationLow": return (a.durationSeconds || 0) - (b.durationSeconds || 0);
+            case "countryAZ": return (a.country || "").localeCompare(b.country || "");
+            case "cityAZ": return (a.city || "").localeCompare(b.city || "");
+            case "shapeAZ": return (a.shape || "").localeCompare(b.shape || "");
+            default: return 0;
         }
     });
 }
@@ -205,11 +239,9 @@ function applySorting() {
 // ----------------------------------------------------
 function applyFilters() {
     filtered = rawData.filter(d => {
-
         const countryOK = activeCountries.size === 0 || activeCountries.has(d.country);
         const shapeOK = activeShapes.size === 0 || activeShapes.has(d.shape);
-
-        // YEAR FILTER (don't drop unknown years)
+        
         const year = d.datetimeParsed ? d.datetimeParsed.getFullYear() : null;
         const yearOK = (year === null) || (year >= yearMin && year <= yearMax);
 
@@ -220,129 +252,67 @@ function applyFilters() {
     });
 
     applySorting();
-    updateGrid();
+
+    if (currentView === "glyph") updateGrid();
+    else if (currentView === "map") updateMap();
+    else if (currentView === "timeline") updateTimeline();
 }
 
 // ----------------------------------------------------
-// GLYPH DRAWER
+// TAB SWITCHING LOGIC
 // ----------------------------------------------------
-function drawGlyph(d) {
-    const color = countryColors[d.country] || "#f8c200";
-    return `
-    <svg width="100%" height="100%" viewBox="0 0 48 48" style="image-rendering: pixelated;">
-        ${generateShape(d.shape, color)}
-    </svg>`;
-}
+d3.selectAll(".mode").on("click", function() {
+    d3.selectAll(".mode").classed("active", false);
+    d3.select(this).classed("active", true);
 
-function generateShape(shape, color) {
-    const cx = 24, cy = 24, r = 16;
+    const mode = d3.select(this).text().trim();
 
-    switch (shape) {
-        case "circle":
-        case "sphere":
-            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" />`;
+    if (mode === "MAP") switchView("map");
+    else if (mode === "GLYPH") switchView("glyph");
+    else if (mode === "TIMELINE") switchView("timeline");
+    
+});
 
-        case "disk":
-            return `<rect x="${cx - r}" y="${cy - 8}" width="${2*r}" height="16" fill="${color}" />`;
+function switchView(viewName) {
+    currentView = viewName;
 
-        case "cylinder":
-            return `<rect x="${cx - 8}" y="${cy - r}" width="16" height="${2*r}" fill="${color}" />`;
+    // Hide All
+    d3.select("#view-glyph").style("display", "none");
+    d3.select("#view-map").style("display", "none");
+    d3.select("#view-timeline").style("display", "none");
+    d3.select("#map-controls").style("display", "none");
 
-        case "triangle":
-            return `
-                <polygon points="${cx},${cy-r} ${cx-r},${cy+r} ${cx+r},${cy+r}"
-                fill="${color}" />
-            `;
+    if (viewName === "map") {
+        d3.select("#view-map").style("display", "block");
+        d3.select("#map-controls").style("display", "flex");
+        d3.select("#view-title").text("GLOBAL TRACKING MAP");
+        if (!mapInitialized) initMap();
+        else updateMap();
 
-        case "light":
-            return `
-                <rect x="${cx - 3}" y="${cy - r}" width="6" height="${2*r}" fill="${color}" />
-                <rect x="${cx - r}" y="${cy - 3}" width="${2*r}" height="6" fill="${color}" />
-            `;
+    } else if (viewName === "timeline") {
+        d3.select("#view-timeline").style("display", "block");
+        d3.select("#view-title").text("TEMPORAL ANALYSIS");
+        if (!timelineInitialized) initTimeline();
+        else updateTimeline();
 
-        case "formation":
-            return `
-                <circle cx="${cx - 16}" cy="${cy}" r="6" fill="${color}" />
-                <circle cx="${cx}" cy="${cy}" r="8" fill="${color}" />
-                <circle cx="${cx + 16}" cy="${cy}" r="6" fill="${color}" />
-            `;
-
-        case "fireball":
-            return `
-                <circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" />
-                <circle cx="${cx + 10}" cy="${cy - 10}" r="8" fill="${color}" />
-            `;
-
-        default:
-            return `<text x="18" y="32" font-size="20" fill="${color}">?</text>`;
+    } else {
+        d3.select("#view-glyph").style("display", "block");
+        d3.select("#view-title").text("VISUAL DATA MATRIX");
+        updateGrid();
     }
 }
 
 // ----------------------------------------------------
-// SAFE TOOLTIP (NO OVERFLOW)
-// ----------------------------------------------------
-function safe(v, fallback = "Unknown") {
-    return (v === undefined || v === null || v === "" ? fallback : v);
-}
-
-function showTooltip(event, d) {
-    const t = d3.select("#tooltip");
-
-    const html = `
-ID: ${safe(d.id)}
-Date: ${safe(d.datetime)}
-Location: ${safe(d.city)}, ${safe(d.state)}, ${safe(d.country, "").toString().toUpperCase()}
-Shape: ${safe(d.shape)}
-Duration: ${safe(d.durationSeconds)}s (${safe(d.durationCategory)})
-Coords: ${safe(d.latitude)}, ${safe(d.longitude)}
---------------------------------------------------
-${safe(d.comments, "(No comments)")}
-    `;
-
-    t.html(html);
-
-    const tooltipWidth = 260;
-    const padding = 20;
-
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
-
-    let x = event.clientX + padding;
-    let y = event.clientY + padding;
-
-    const rect = t.node().getBoundingClientRect();
-    const h = rect.height || 180;
-
-    if (x + tooltipWidth > viewportW) {
-        x = event.clientX - tooltipWidth - padding;
-    }
-
-    if (y + h > viewportH) {
-        y = event.clientY - h - padding;
-    }
-
-    t.style("left", x + "px")
-     .style("top", y + "px")
-     .style("opacity", 1);
-}
-
-function hideTooltip() {
-    d3.select("#tooltip").style("opacity", 0);
-}
-
-// ----------------------------------------------------
-// GRID UPDATE (HYBRID: TIERS FOR DURATION, MIXED FOR OTHERS)
+// GRID ENGINE (Hybrid: Tiered vs Mixed)
 // ----------------------------------------------------
 function updateGrid() {
     const grid = d3.select("#glyph-grid");
     const container = grid.node().parentNode;
-    const sortMode = document.getElementById("sort-select").value; // Get current sort
+    const sortMode = document.getElementById("sort-select").value;
 
-    // 1. Update Counts
     d3.select("#showing-count").text(filtered.length);
     d3.select("#total-count").text(rawData.length);
 
-    // 2. Calculate Grid Dimensions (Force Multiples of 6)
     const availableWidth = container.getBoundingClientRect().width - 40; 
     const cellPixelSize = 40; 
     const gapSize = 6;
@@ -353,16 +323,13 @@ function updateGrid() {
     if (numCols < 6) numCols = Math.floor(maxPossibleCols / 2) * 2; 
     if (numCols < 1) numCols = 1;
 
-    // Force CSS width
     const finalGridWidth = (numCols * colTotal) - gapSize;
     grid.style("grid-template-columns", `repeat(${numCols}, ${cellPixelSize}px)`)
         .style("width", `${finalGridWidth}px`);
 
-    // 3. COMMON PACKING HELPERS
     let gridMap = [];   
     let displayList = []; 
     
-    // Initialize Map
     const estimatedRows = Math.ceil(filtered.length * 2); 
     const mapSize = numCols * estimatedRows + (numCols * 20); 
     for(let i=0; i<mapSize; i++) gridMap[i] = false;
@@ -409,10 +376,11 @@ function updateGrid() {
         }
     }
 
-    // GENERIC PLACEMENT FUNCTION (Used by both modes)
+    // Generic Placement Logic
     function processDataList(listToProcess) {
         let cursor = 0;
         while (cursor < listToProcess.length) {
+
             if (gridCursor + (4 * numCols) >= gridMap.length) {
                 for(let k=0; k < numCols * 10; k++) gridMap.push(false);
             }
@@ -424,12 +392,10 @@ function updateGrid() {
 
             const d = listToProcess[cursor];
             
-            // Determine size
             let size = cellSizeMap[d.durationCategory] ? cellSizeMap[d.durationCategory].cols : 1;
             if (size > numCols) size = numCols;
 
             if (canFit(gridCursor, size)) {
-                // PLACE DATA
                 const colStart = (gridCursor % numCols) + 1;
                 const rowStart = Math.floor(gridCursor / numCols) + 1;
                 markRegion(gridCursor, size);
@@ -440,7 +406,6 @@ function updateGrid() {
                 });
                 cursor++; 
             } else {
-                // FILLER
                 const colStart = (gridCursor % numCols) + 1;
                 const rowStart = Math.floor(gridCursor / numCols) + 1;
                 markRegion(gridCursor, 1);
@@ -453,16 +418,8 @@ function updateGrid() {
         }
     }
 
-    // 4. DECISION: WHICH LAYOUT TO USE?
-
     if (sortMode === "durationHigh" || sortMode === "durationLow") {
-        // --- STRATEGY A: TIERED LAYOUT (Strict Buckets) ---
-        
-        // 1. Bucket the data
-        let tier3 = [];
-        let tier2 = [];
-        let tier1 = [];
-
+        let tier3 = [], tier2 = [], tier1 = [];
         filtered.forEach(d => {
             let cols = cellSizeMap[d.durationCategory] ? cellSizeMap[d.durationCategory].cols : 1;
             if (cols > numCols) cols = numCols;
@@ -471,27 +428,19 @@ function updateGrid() {
             else tier1.push(d);
         });
 
-        // 2. Process strictly in order (Large -> Medium -> Small) or reverse if Low->High
         if (sortMode === "durationHigh") {
-            // High to Low: 3 -> 2 -> 1
             if (tier3.length > 0) { processDataList(tier3); forceLineBreak(); }
             if (tier2.length > 0) { processDataList(tier2); forceLineBreak(); }
             if (tier1.length > 0) { processDataList(tier1); }
         } else {
-            // Low to High: 1 -> 2 -> 3
-            // (Usually low duration means small size, so we start with small)
             if (tier1.length > 0) { processDataList(tier1); forceLineBreak(); }
             if (tier2.length > 0) { processDataList(tier2); forceLineBreak(); }
             if (tier3.length > 0) { processDataList(tier3); }
         }
-
     } else {
-        // --- STRATEGY B: STANDARD MIXED LAYOUT ---
-        // Just process the filtered list as-is (respecting Newest, A-Z, etc.)
         processDataList(filtered);
     }
 
-    // 5. Render
     grid.html("");
     const items = grid.selectAll(".item")
         .data(displayList)
@@ -507,8 +456,164 @@ function updateGrid() {
 }
 
 // ----------------------------------------------------
-// REAL-TIME CLOCK
+// MAP ENGINE (D3 Geo + TopoJSON)
 // ----------------------------------------------------
+let mapInitialized = false;
+let mapSvg, mapG, projection, path, zoom;
+
+function initMap() {
+    const container = d3.select("#view-map");
+    const width = container.node().getBoundingClientRect().width || 800;
+    const height = 600;
+
+    mapSvg = container.append("svg")
+        .attr("class", "map-svg")
+        .attr("viewBox", `0 0 ${width} ${height}`);
+
+    projection = d3.geoMercator()
+        .scale(130)
+        .translate([width / 2, height / 1.5]);
+
+    path = d3.geoPath().projection(projection);
+
+    zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on("zoom", (event) => mapG.attr("transform", event.transform));
+
+    mapSvg.call(zoom);
+
+    mapG = mapSvg.append("g");
+
+    // Load TopoJSON World Data
+    d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
+        const countries = topojson.feature(world, world.objects.countries);
+
+        mapG.append("path")
+            .datum(d3.geoGraticule())
+            .attr("class", "graticule")
+            .attr("d", path);
+
+        mapG.selectAll("path.country")
+            .data(countries.features)
+            .enter().append("path")
+            .attr("class", "country")
+            .attr("d", path);
+
+        mapInitialized = true;
+        updateMap();
+    });
+
+    d3.select("#zoom-in").on("click", () => mapSvg.transition().call(zoom.scaleBy, 1.5));
+    d3.select("#zoom-out").on("click", () => mapSvg.transition().call(zoom.scaleBy, 0.75));
+    d3.select("#zoom-reset").on("click", () => mapSvg.transition().call(zoom.transform, d3.zoomIdentity));
+}
+
+function updateMap() {
+    if (!mapInitialized) return;
+
+    d3.select("#showing-count").text(filtered.length);
+    d3.select("#total-count").text(rawData.length);
+
+    mapG.selectAll(".map-marker").remove();
+
+    mapG.selectAll(".map-marker")
+        .data(filtered)
+        .enter()
+        .append("circle")
+        .attr("class", "map-marker")
+        .attr("cx", d => {
+            const coords = projection([d.longitude, d.latitude]);
+            return coords ? coords[0] : null;
+        })
+        .attr("cy", d => {
+            const coords = projection([d.longitude, d.latitude]);
+            return coords ? coords[1] : null;
+        })
+        .filter(function() { return d3.select(this).attr("cx") != null; })
+        .attr("r", d => {
+            if (d.durationCategory === "long") return 6;
+            if (d.durationCategory === "medium") return 4;
+            return 2;
+        })
+        .on("mousemove", (event, d) => showTooltip(event, d))
+        .on("mouseleave", hideTooltip);
+}
+
+// ----------------------------------------------------
+// GLYPH DRAWER
+// ----------------------------------------------------
+function drawGlyph(d) {
+    const color = countryColors[d.country] || "#f8c200";
+    return `
+    <svg width="100%" height="100%" viewBox="0 0 48 48" style="image-rendering: pixelated;">
+        ${generateShape(d.shape, color)}
+    </svg>`;
+}
+
+function generateShape(shape, color) {
+    const cx = 24, cy = 24, r = 16;
+    switch (shape) {
+        case "circle": case "sphere":
+            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" />`;
+        case "disk":
+            return `<rect x="${cx - r}" y="${cy - 8}" width="${2*r}" height="16" fill="${color}" />`;
+        case "cylinder":
+            return `<rect x="${cx - 8}" y="${cy - r}" width="16" height="${2*r}" fill="${color}" />`;
+        case "triangle":
+            return `<polygon points="${cx},${cy-r} ${cx-r},${cy+r} ${cx+r},${cy+r}" fill="${color}" />`;
+        case "light":
+            return `<rect x="${cx - 3}" y="${cy - r}" width="6" height="${2*r}" fill="${color}" />
+                    <rect x="${cx - r}" y="${cy - 3}" width="${2*r}" height="6" fill="${color}" />`;
+        case "formation":
+            return `<circle cx="${cx - 16}" cy="${cy}" r="6" fill="${color}" />
+                    <circle cx="${cx}" cy="${cy}" r="8" fill="${color}" />
+                    <circle cx="${cx + 16}" cy="${cy}" r="6" fill="${color}" />`;
+        case "fireball":
+            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" />
+                    <circle cx="${cx + 10}" cy="${cy - 10}" r="8" fill="${color}" />`;
+        default:
+            return `<text x="18" y="32" font-size="20" fill="${color}">?</text>`;
+    }
+}
+
+// ----------------------------------------------------
+// UTILS
+// ----------------------------------------------------
+function safe(v, fallback = "Unknown") {
+    return (v === undefined || v === null || v === "" ? fallback : v);
+}
+
+function showTooltip(event, d) {
+    const t = d3.select("#tooltip");
+    const html = `
+ID: ${safe(d.id)}
+Date: ${safe(d.datetime)}
+Location: ${safe(d.city)}, ${safe(d.state)}, ${safe(d.country, "").toString().toUpperCase()}
+Shape: ${safe(d.shape)}
+Duration: ${safe(d.durationSeconds)}s (${safe(d.durationCategory)})
+Coords: ${safe(d.latitude)}, ${safe(d.longitude)}
+--------------------------------------------------
+${safe(d.comments, "(No comments)")}`;
+
+    t.html(html);
+    const padding = 20;
+    const tooltipWidth = 260;
+    
+    let x = event.clientX + padding;
+    let y = event.clientY + padding;
+
+    if (x + tooltipWidth > window.innerWidth) x = event.clientX - tooltipWidth - padding;
+    if (y + 200 > window.innerHeight) y = event.clientY - 200 - padding;
+
+    t.style("left", x + "px")
+     .style("top", y + "px")
+     .style("opacity", 1);
+}
+
+function hideTooltip() {
+    d3.select("#tooltip").style("opacity", 0);
+}
+
 function updateClock() {
     const now = new Date();
     const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
@@ -516,82 +621,115 @@ function updateClock() {
 ${months[now.getMonth()]} ${String(now.getDate()).padStart(2,'0')}, ${String(now.getFullYear()).slice(2)}
 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}
 `.trim();
-
     document.getElementById("current-date").innerText = dateString;
 }
+
+window.addEventListener("resize", () => {
+    if (currentView === "glyph") {
+        clearTimeout(window.resizeTimer);
+        window.resizeTimer = setTimeout(updateGrid, 100);
+    }
+});
 
 setInterval(updateClock, 1000);
 updateClock();
 
 // ----------------------------------------------------
-// CUSTOM DROPDOWN INIT (Replaces default <select>)
+// TIMELINE ENGINE (Line Chart)
 // ----------------------------------------------------
-function initCustomDropdown() {
-    const originalSelect = document.getElementById("sort-select");
-    if (!originalSelect) return;
+let timelineInitialized = false;
+let timeSvg, timeG, xTime, yTime, lineGenerator;
+let timeWidth, timeHeight;
+const timeMargin = { top: 40, right: 40, bottom: 40, left: 60 };
 
-    // 1. Create the wrapper
-    const wrapper = document.createElement("div");
-    wrapper.classList.add("custom-select-wrapper");
-    originalSelect.parentNode.insertBefore(wrapper, originalSelect);
-    wrapper.appendChild(originalSelect); // Move original select inside (it will be hidden)
+function initTimeline() {
+    const container = d3.select("#view-timeline");
+    const rect = container.node().getBoundingClientRect();
+    timeWidth = (rect.width || 800) - timeMargin.left - timeMargin.right;
+    timeHeight = 600 - timeMargin.top - timeMargin.bottom;
 
-    // 2. Create the Trigger (The visible button)
-    const trigger = document.createElement("div");
-    trigger.classList.add("custom-select-trigger");
-    trigger.innerHTML = `
-        <span>${originalSelect.options[originalSelect.selectedIndex].text}</span>
-        <div class="arrow"></div>
-    `;
-    wrapper.appendChild(trigger);
+    timeSvg = container.append("svg")
+        .attr("class", "timeline-svg")
+        .attr("viewBox", `0 0 ${rect.width || 800} 600`);
 
-    // 3. Create the Options Container
-    const optionsList = document.createElement("div");
-    optionsList.classList.add("custom-options");
-    wrapper.appendChild(optionsList);
+    timeG = timeSvg.append("g")
+        .attr("transform", `translate(${timeMargin.left},${timeMargin.top})`);
 
-    // 4. Populate Options
-    for (const option of originalSelect.options) {
-        const customOption = document.createElement("span");
-        customOption.classList.add("custom-option");
-        customOption.dataset.value = option.value;
-        customOption.textContent = option.text;
-        
-        if (option.selected) {
-            customOption.classList.add("selected");
-        }
+    xTime = d3.scaleLinear().range([0, timeWidth]);
+    yTime = d3.scaleLinear().range([timeHeight, 0]);
 
-        // Handle Click Selection
-        customOption.addEventListener("click", function() {
-            // Update Visuals
-            trigger.querySelector("span").textContent = this.textContent;
-            wrapper.querySelectorAll(".custom-option").forEach(opt => opt.classList.remove("selected"));
-            this.classList.add("selected");
-            wrapper.classList.remove("open");
+    timeG.append("g").attr("class", "x-axis").attr("transform", `translate(0,${timeHeight})`);
+    timeG.append("g").attr("class", "y-axis");
 
-            // Sync with Original Select
-            originalSelect.value = this.dataset.value;
-            
-            // Trigger Change Event (so your sorting logic runs!)
-            const event = new Event('change');
-            originalSelect.dispatchEvent(event);
-        });
+    timeG.append("path").attr("class", "timeline-path");
 
-        optionsList.appendChild(customOption);
-    }
-
-    // 5. Toggle Open/Close
-    trigger.addEventListener("click", function() {
-        wrapper.classList.toggle("open");
-    });
-
-    // 6. Close when clicking outside
-    document.addEventListener("click", function(e) {
-        if (!wrapper.contains(e.target)) {
-            wrapper.classList.remove("open");
-        }
-    });
+    timelineInitialized = true;
+    updateTimeline();
 }
 
-// CALL THE FUNCTION
-initCustomDropdown();
+function updateTimeline() {
+    if (!timelineInitialized) return;
+
+    const counts = new Map();
+    for (let y = yearMin; y <= yearMax; y++) {
+        counts.set(y, 0);
+    }
+
+    filtered.forEach(d => {
+        if (d.datetimeParsed) {
+            const y = d.datetimeParsed.getFullYear();
+            if (counts.has(y)) {
+                counts.set(y, counts.get(y) + 1);
+            }
+        }
+    });
+
+    const timelineData = Array.from(counts, ([year, count]) => ({ year, count }))
+        .sort((a, b) => a.year - b.year);
+
+    xTime.domain([yearMin, yearMax]);
+    yTime.domain([0, d3.max(timelineData, d => d.count) || 10]).nice();
+
+    const xAxis = d3.axisBottom(xTime).tickFormat(d3.format("d")); 
+    const yAxis = d3.axisLeft(yTime);
+
+    timeG.select(".x-axis").transition().call(xAxis);
+    timeG.select(".y-axis").transition().call(yAxis);
+
+    lineGenerator = d3.line()
+        .x(d => xTime(d.year))
+        .y(d => yTime(d.count))
+        .curve(d3.curveMonotoneX);
+
+    timeG.select(".timeline-path")
+        .datum(timelineData)
+        .transition().duration(500)
+        .attr("d", lineGenerator);
+
+    const dots = timeG.selectAll(".timeline-dot").data(timelineData);
+
+    dots.exit().remove();
+
+    dots.enter()
+        .append("circle")
+        .attr("class", "timeline-dot")
+        .attr("r", 4)
+        .merge(dots)
+        .on("mousemove", (event, d) => showTimelineTooltip(event, d))
+        .on("mouseleave", hideTooltip)
+        .transition().duration(500)
+        .attr("cx", d => xTime(d.year))
+        .attr("cy", d => yTime(d.count));
+}
+
+function showTimelineTooltip(event, d) {
+    const t = d3.select("#tooltip");
+    t.html(`
+YEAR: ${d.year}
+SIGHTINGS: ${d.count}
+    `);
+    
+    t.style("left", (event.clientX + 20) + "px")
+     .style("top", (event.clientY - 40) + "px")
+     .style("opacity", 1);
+}

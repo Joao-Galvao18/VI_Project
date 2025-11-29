@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="style.css">
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
 </head>
 
 <body>
@@ -56,18 +57,18 @@
 
             <div class="filter-section">
                 <h3>> YEAR: 
-                    <span id="year-label-min">1949</span> - 
-                    <span id="year-label-max">2024</span>
+                    <span id="year-label-min">1945</span> - 
+                    <span id="year-label-max">2015</span>
                 </h3>
 
                 <div class="range-container">
-                    <input type="range" id="year-min" min="1949" max="2024" value="1949">
-                    <input type="range" id="year-max" min="1949" max="2024" value="2024">
+                    <input type="range" id="year-min" min="1945" max="2015" value="1945">
+                    <input type="range" id="year-max" min="1945" max="2015" value="2015">
                 </div>
 
                 <div class="range-values">
-                    <span id="year-val-min">1949</span>
-                    <span id="year-val-max" class="right">2024</span>
+                    <span id="year-val-min">1945</span>
+                    <span id="year-val-max" class="right">2015</span>
                 </div>
             </div>
 
@@ -102,10 +103,27 @@
             </div>
         </aside>
 
-        <section class="matrix">
-            <h2>Visual Data Matrix</h2>
-            <div id="glyph-grid"></div>
-        </section>
+     <section class="matrix">
+         <div class="matrix-header">
+             <h2 id="view-title">VISUAL DATA MATRIX</h2>
+        
+             <div id="map-controls" class="map-controls" style="display: none;">
+                 <button id="zoom-in">+</button>
+                 <button id="zoom-out">-</button>
+                 <button id="zoom-reset">↺</button>
+             </div>
+         </div>
+
+         <div id="view-glyph">
+             <div id="glyph-grid"></div>
+         </div>
+
+         <div id="view-map" style="display: none;">
+        </div>
+
+        <div id="view-timeline" style="display: none;"></div>
+
+     </section>
 
     </main>
 

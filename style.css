@@ -1,6 +1,5 @@
-/* GLOBAL SETTINGS & VARIABLES */
 * {
-    box-sizing: border-box; /* Crucial for Grid Math */
+    box-sizing: border-box;
 }
 
 :root {
@@ -35,7 +34,7 @@ body {
     padding: 10px;
     display: flex;
     gap: 10px;
-    overflow-x: auto; /* Safety for mobile */
+    overflow-x: auto;
 }
 
 .mode {
@@ -92,7 +91,7 @@ body {
 }
 
 .filter-stats span {
-    color: #fff; /* White numbers to pop */
+    color: #fff;
 }
 
 .filters h3 {
@@ -132,7 +131,6 @@ body {
     width: 100%;
     height: 30px;
     margin-top: 10px;
-    /* Track Line */
     background: linear-gradient(to bottom, transparent 40%, #f8c200 40%, #f8c200 60%, transparent 60%);
     z-index: 1;
 }
@@ -146,13 +144,13 @@ body {
     transform: translateY(-50%);
     margin: 0;
     background: transparent;
-    pointer-events: none; /* Allows clicking through input to the one below */
+    pointer-events: none;
     z-index: 2;
 }
 
 .range-container input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    pointer-events: auto; /* Re-enable pointer events on thumb */
+    pointer-events: auto;
     width: 20px;
     height: 20px;
     background: black;
@@ -189,7 +187,7 @@ body {
 
 /* CUSTOM RETRO DROPDOWN */
 select#sort-select {
-    display: none; /* Hide default select */
+    display: none;
 }
 
 .custom-select-wrapper {
@@ -236,7 +234,7 @@ select#sort-select {
 .custom-options {
     position: absolute;
     display: block;
-    top: 100%; /* Opens Downwards */
+    top: 100%;
     left: 0;
     right: 0;
     border: 1px solid #f8c200;
@@ -291,7 +289,6 @@ select#sort-select {
 
 #glyph-grid {
     display: grid;
-    /* Uses variables defined in :root */
     grid-auto-rows: var(--cell-size); 
     gap: var(--gap-size);
     margin: 0 auto;
@@ -307,7 +304,7 @@ select#sort-select {
     align-items: center;
     cursor: pointer;
     
-    border: 1px solid #333; /* Border is INSIDE the box size now */
+    border: 1px solid #333;
     box-shadow: 0 0 0 1px #111 inset;
     background: rgba(0, 0, 0, 0.3);
 }
@@ -336,4 +333,144 @@ select#sort-select {
     opacity: 0;
     transition: opacity 0.1s ease-out;
     z-index: 9999;
+}
+
+/* --- MAP VIEW --- */
+#view-map {
+    width: 100%;
+    height: 600px;
+    position: relative;
+    border: 1px solid #333;
+    background: rgba(0, 20, 0, 0.3);
+    overflow: hidden;
+}
+
+.map-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Wireframe Map Styles */
+.country {
+    fill: rgba(248, 194, 0, 0.05); 
+    stroke: #f8c200;
+    stroke-width: 0.5px;
+    vector-effect: non-scaling-stroke;
+}
+
+.graticule {
+    fill: none;
+    stroke: #f8c200;
+    stroke-width: 0.2px;
+    stroke-opacity: 0.2;
+}
+
+.map-marker {
+    fill: #f8c200;
+    stroke: none;
+    opacity: 0.8;
+    cursor: pointer;
+    transition: r 0.2s;
+}
+
+.map-marker:hover {
+    fill: #fff;
+    opacity: 1;
+}
+
+/* --- MAP CONTROLS --- */
+.matrix-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.map-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.map-controls button {
+    background: black;
+    color: #f8c200;
+    border: 1px solid #f8c200;
+    width: 30px;
+    height: 30px;
+    font-family: "VT323", monospace;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.map-controls button:hover {
+    background: #f8c200;
+    color: black;
+}
+
+/* --- TIMELINE VIEW --- */
+#view-timeline {
+    width: 100%;
+    height: 600px;
+    position: relative;
+    border: 1px solid #333;
+    background: rgba(0, 20, 0, 0.3);
+    overflow: hidden;
+}
+
+.timeline-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* The Line */
+.timeline-path {
+    fill: none;
+    stroke: #f8c200;
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 4px #f8c200);
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    transition: d 0.5s ease;
+}
+
+/* The Dots */
+.timeline-dot {
+    fill: black;
+    stroke: #f8c200;
+    stroke-width: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.timeline-dot:hover {
+    fill: #f8c200;
+    r: 6;
+}
+
+/* Axis Styles */
+.axis text {
+    fill: #f8c200;
+    font-family: "VT323", monospace;
+    font-size: 14px;
+}
+
+/* TO THIS: */
+.x-axis text, .y-axis text {
+    fill: #f8c200;
+    font-family: "VT323", monospace;
+    font-size: 14px;
+}
+
+/* Add this to color the axis lines yellow too */
+.x-axis path, .x-axis line, 
+.y-axis path, .y-axis line {
+    stroke: #f8c200;
+}
+
+/* Grid Lines */
+.grid-line {
+    stroke: #333;
+    stroke-dasharray: 4;
 }
