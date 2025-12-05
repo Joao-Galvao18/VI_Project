@@ -316,21 +316,22 @@ select#sort-select { display: none; }
 }
 
 /* --- SHARED CONTAINER STYLES --- */
-/* Updated to include #view-heatmap so it grows to fill screen */
-#view-glyph, #view-map, #view-timeline, #view-heatmap {
+/* Consolidated list of all views */
+#view-glyph, #view-map, #view-timeline, #view-heatmap, #view-bar, #view-scatter, #view-polar {
     flex-grow: 1;
-    border: 2px solid var(--theme-color); /* Yellow borders for all */
+    border: 2px solid var(--theme-color);
     padding: 15px;
     background: rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
     margin-bottom: 5px;
     position: relative;
     width: 100%;
-    overflow: hidden;
+    overflow: hidden; /* Default hidden for charts */
 }
 
+/* OVERRIDE: Allow scrolling specifically for Glyph view */
 #view-glyph {
-    overflow-y: auto; 
+    overflow-y: auto !important; 
 }
 
 /* SCROLLBAR RETRO */
@@ -379,7 +380,7 @@ select#sort-select { display: none; }
 }
 
 /* --- SVG GRAPH STYLES --- */
-.map-svg, .timeline-svg, .heatmap-svg {
+.map-svg, .timeline-svg, .heatmap-svg, .bar-svg, .scatter-svg, .polar-svg {
     width: 100%;
     height: 100%;
     display: block;
@@ -395,7 +396,6 @@ select#sort-select { display: none; }
     fill: var(--theme-color); stroke: none; opacity: 0.8; cursor: pointer; transition: r 0.2s;
 }
 .map-marker:hover { fill: #fff; opacity: 1; }
-
 
 .map-controls { display: flex; gap: 5px; }
 .map-controls button {
@@ -438,8 +438,48 @@ select#sort-select { display: none; }
     .layout { height: auto; min-height: calc(100vh - 150px); }
 }
 
-/* HEATMAP SPECIFIC STYLES */
-/* Buttons reuse the .filter-btn class, but we ensure text sizing here if needed */
+/* HEATMAP SPECIFIC */
 #view-heatmap {
     position: relative;
+}
+
+/* BAR CHART SPECIFIC */
+.bar-rect {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.bar-rect:hover {
+    fill: #fff !important;
+    opacity: 1;
+}
+
+/* SCATTER SPECIFIC */
+.scatter-dot {
+    cursor: pointer;
+    transition: r 0.2s, opacity 0.2s;
+}
+.scatter-dot:hover {
+    opacity: 1;
+    stroke: #fff;
+    stroke-width: 2px;
+}
+
+/* POLAR SPECIFIC */
+.polar-path {
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+}
+.polar-path:hover {
+    opacity: 1;
+    fill: #fff !important; /* Flash white like bar chart */
+}
+.polar-grid-circle {
+    fill: none;
+    stroke: var(--theme-color);
+    stroke-opacity: 0.1;
+    stroke-dasharray: 4;
+}
+.polar-grid-line {
+    stroke: var(--theme-color);
+    stroke-opacity: 0.1;
 }

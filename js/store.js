@@ -3,7 +3,7 @@ export const countryColors = {
     us: "#f8c200", // USA
     gb: "#00eaff", // Great Britain
     au: "#ff00ff", // Australia
-    ca: "#00ff7f", // Canada (Restored)
+    ca: "#00ff7f", // Canada
     unknown: "#333333" 
 };
 
@@ -40,35 +40,50 @@ export function loadData() {
         const parseDateTime = d3.timeParse("%m/%d/%Y %H:%M");
         const parsePosted = d3.timeParse("%m/%d/%Y");
         
-        // --- STRICT COUNTRY LIST ---
-        // Added "ca" back to the list.
+        // --- 1. STRICT FILTERS ---
+        // Countries: USA, UK, Australia, Canada
         const allowedCountries = new Set(["us", "gb", "au", "ca"]);
+
+        // Shapes: Only those present in the UI Filter list
+        const allowedShapes = new Set([
+            "circle", "disk", "light", "fireball", 
+            "sphere", "triangle", "formation", "cylinder", "unknown"
+        ]);
         
         let rejectedCount = 0;
 
         data.forEach(row => {
-            // 1. Normalize Keys
+            // Normalize Keys
             let d = {};
             Object.keys(row).forEach(k => {
                 const cleanKey = k.toLowerCase().replace(/[^a-z0-9]/g, "");
                 d[cleanKey] = row[k];
             });
 
-            // 2. STRICT Country Check
+            // A. Check Country
             const rawCountry = (d.country || "").toLowerCase().replace(/[^a-z]/g, "");
-            
-            // If it's not US, GB, AU, or CA -> REJECT IT
             if (!allowedCountries.has(rawCountry)) {
                 rejectedCount++;
                 return; 
             }
 
-            // 3. Coordinate Check
+            // B. Check Shape (NEW STRICT FILTER)
+            let rawShape = (d.shape || "unknown").trim().toLowerCase();
+            // If shape is empty/missing, default to 'unknown'
+            if (rawShape === "") rawShape = "unknown";
+            
+            // If the shape is NOT in our allowed list (e.g. "egg"), SKIP IT.
+            if (!allowedShapes.has(rawShape)) {
+                rejectedCount++;
+                return;
+            }
+
+            // C. Check Coordinates
             const lat = parseFloat(d.latitude);
             const lng = parseFloat(d.longitude);
             if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return; 
 
-            // 4. Parse Dates
+            // D. Parse Dates
             const rawTime = d.datetime || "";
             const rawPosted = d.dateposted || "";
             
@@ -96,7 +111,7 @@ export function loadData() {
                     city: d.city || "Unknown",
                     state: d.state || "",
                     country: rawCountry, 
-                    shape: (d.shape || "unknown").trim(),
+                    shape: rawShape, // We know this is valid now
                     durationSeconds: duration,
                     durationCategory: cat,
                     comments: d.comments || "",
@@ -106,16 +121,16 @@ export function loadData() {
             }
         });
 
-        console.log(`Filter Report: Rejected ${rejectedCount} non-matching countries.`);
-        console.log(`Kept ${cleanData.length} valid entries (US/GB/AU/CA).`);
+        console.log(`Filter Report: Rejected ${rejectedCount} rows (Bad Country or Bad Shape).`);
+        console.log(`Kept ${cleanData.length} Clean Entries.`);
 
-        // 5. Shuffle to get a mix of years
+        // 2. Shuffle (To get random distribution of the good data)
         shuffleArray(cleanData);
 
-        // 6. Slice top 1000
+        // 3. Slice Top 1000
         state.rawData = cleanData.slice(0, 1000);
         
-        // 7. Sort Chronologically
+        // 4. Sort Chronologically
         state.rawData.sort((a, b) => b.datetimeParsed - a.datetimeParsed);
 
         applyFilters();

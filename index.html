@@ -100,7 +100,7 @@
             </div>
         </aside>
 
-<section class="matrix">
+     <section class="matrix">
          <div class="matrix-header">
              <h2 id="view-title">VISUAL DATA MATRIX</h2>
         
@@ -116,13 +116,23 @@
                 <button class="filter-btn" id="hm-btn-dur">DURATION</button>
              </div>
 
+             <div id="bar-controls" class="header-controls" style="display: none;">
+                <button class="filter-btn active" id="bar-btn-shape">BY SHAPE</button>
+                <button class="filter-btn" id="bar-btn-country">BY COUNTRY</button>
+             </div>
+
+             <div id="polar-controls" class="header-controls" style="display: none;">
+                <button class="filter-btn active" id="polar-btn-shape">COLOR: SHAPE</button>
+                <button class="filter-btn" id="polar-btn-dur">COLOR: DURATION</button>
+             </div>
+
              <div id="map-controls" class="map-controls" style="display: none;">
                  <button id="zoom-in">+</button>
                  <button id="zoom-out">-</button>
                  <button id="zoom-reset">↺</button>
              </div>
          </div>
-         
+
          <div id="view-glyph">
              <div id="glyph-grid"></div>
          </div>
@@ -130,6 +140,9 @@
          <div id="view-map" style="display: none;"></div>
          <div id="view-timeline" style="display: none;"></div>
          <div id="view-heatmap" style="display: none;"></div>
+         <div id="view-bar" style="display: none;"></div>
+         <div id="view-scatter" style="display: none;"></div>
+         <div id="view-polar" style="display: none;"></div>
 
      </section>
 
