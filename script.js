@@ -10,7 +10,7 @@ let currentView = "glyph";
 // Sets for filters
 let activeCountries = new Set();
 let activeShapes = new Set();
-let activeDurationCat = "all"; // NOVA VARIÁVEL DE ESTADO
+let activeDurationCat = "all"; // State variable for duration buttons
 
 // Slider values
 let yearMin = 1945;
@@ -52,7 +52,7 @@ d3.json("data/ufo_sample_500_clean.json").then(data => {
     initFilters();
     initSliders();
     initCustomDropdown();
-    initDurationButtons(); // INICIA OS BOTÕES DE DURAÇÃO
+    initDurationButtons(); // Initialize new buttons
     setupSortingListener();
     
     // Initial Render
@@ -242,7 +242,7 @@ function applyFilters() {
         const minutes = d.durationSeconds ? d.durationSeconds / 60 : 0;
         const durationOK = minutes >= durMin && minutes <= durMax;
 
-        // FILTRO DE CATEGORIA DE DURAÇÃO
+        // DURATION CATEGORY FILTER
         let catOK = true;
         if (activeDurationCat !== "all") {
             catOK = (d.durationCategory === activeDurationCat);
@@ -277,13 +277,13 @@ function switchView(viewName) {
     d3.select("#view-map").style("display", "none");
     d3.select("#view-timeline").style("display", "none");
     
-    // Esconde controlos específicos
+    // Hide controls
     d3.select("#map-controls").style("display", "none");
     d3.select("#glyph-controls").style("display", "none");
 
     if (viewName === "map") {
         d3.select("#view-map").style("display", "block");
-        d3.select("#map-controls").style("display", "flex"); // Mostra controlos do mapa
+        d3.select("#map-controls").style("display", "flex");
         d3.select("#view-title").text("GLOBAL TRACKING MAP");
         
         d3.select("#view-map svg").remove();
@@ -298,7 +298,7 @@ function switchView(viewName) {
         initTimeline();
     } else {
         d3.select("#view-glyph").style("display", "block");
-        d3.select("#glyph-controls").style("display", "flex"); // Mostra botões de duração
+        d3.select("#glyph-controls").style("display", "flex");
         d3.select("#view-title").text("VISUAL DATA MATRIX");
         updateGrid(); 
     }
@@ -499,14 +499,37 @@ function generateShape(shape, color) {
 // UTILS
 // ----------------------------------------------------
 function safe(v, fallback = "Unknown") { return (v === undefined || v === null || v === "" ? fallback : v); }
+
+// FIX: SMART TOOLTIP POSITIONING
 function showTooltip(event, d) {
     const t = d3.select("#tooltip");
     const html = `ID: ${safe(d.id)}\nDate: ${safe(d.datetime)}\nLocation: ${safe(d.city)}, ${safe(d.state)}, ${safe(d.country, "").toUpperCase()}\nShape: ${safe(d.shape)}\nDuration: ${safe(d.durationSeconds)}s (${safe(d.durationCategory)})\n--------------------------------------------------\n${safe(d.comments, "(No comments)")}`;
-    let x = event.clientX + 20, y = event.clientY + 20;
-    if (x + 260 > window.innerWidth) x = event.clientX - 280;
-    if (y + 200 > window.innerHeight) y = event.clientY - 220;
-    t.html(html).style("left", x + "px").style("top", y + "px").style("opacity", 1);
+    
+    // Set content first to check size if needed (using fixed width from CSS)
+    t.html(html);
+
+    const tooltipWidth = 260; // from CSS
+    const tooltipHeight = 200; // approximation
+    const padding = 20;
+
+    let x = event.clientX + padding;
+    let y = event.clientY + padding;
+
+    // Check horizontal overflow (right edge)
+    if (x + tooltipWidth + padding > window.innerWidth) {
+        x = event.clientX - tooltipWidth - padding;
+    }
+
+    // Check vertical overflow (bottom edge)
+    if (y + tooltipHeight + padding > window.innerHeight) {
+        y = event.clientY - tooltipHeight - padding;
+    }
+
+    t.style("left", x + "px")
+     .style("top", y + "px")
+     .style("opacity", 1);
 }
+
 function hideTooltip() { d3.select("#tooltip").style("opacity", 0); }
 function updateClock() {
     const now = new Date();
@@ -540,7 +563,7 @@ window.addEventListener("resize", () => {
 // ----------------------------------------------------
 let timelineInitialized = false;
 let timeSvg, timeG, xTime, yTime, lineGenerator;
-// Margins reduzidas para aproveitar largura total
+// Reduced margins
 const timeMargin = { top: 20, right: 20, bottom: 30, left: 40 };
 
 function initTimeline() {
@@ -611,5 +634,16 @@ function updateTimeline() {
 function showTimelineTooltip(event, d) {
     const t = d3.select("#tooltip");
     t.html(`YEAR: ${d.year}\nSIGHTINGS: ${d.count}`);
-    t.style("left", (event.clientX + 20) + "px").style("top", (event.clientY - 40) + "px").style("opacity", 1);
+    
+    // Also using smart positioning for timeline tooltip
+    const tooltipWidth = 260;
+    const padding = 20;
+    let x = event.clientX + padding;
+    let y = event.clientY - 40;
+
+    if (x + tooltipWidth + padding > window.innerWidth) {
+        x = event.clientX - tooltipWidth - padding;
+    }
+    
+    t.style("left", x + "px").style("top", y + "px").style("opacity", 1);
 }

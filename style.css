@@ -16,7 +16,7 @@ body {
     background: black;
     color: var(--theme-color);
     font-family: "VT323", monospace;
-    overflow: hidden; /* App fixa no ecrã */
+    overflow: hidden; /* Fixes app to screen */
 }
 
 /* HEADER */
@@ -65,7 +65,7 @@ body {
 .layout {
     display: grid;
     grid-template-columns: 280px 1fr;
-    /* Cálculo exato para conectar a sidebar ao rodapé */
+    /* Calculated height to connect sidebar exactly to footer */
     height: calc(100vh - var(--header-height) - var(--nav-height) - var(--footer-height));
     overflow: hidden;
 }
@@ -79,7 +79,7 @@ body {
     height: 100%;
 }
 
-/* SCROLLBAR FILTROS */
+/* STYLED SCROLLBAR FOR FILTERS */
 .filters::-webkit-scrollbar {
     width: 10px;
     background: #000;
@@ -286,7 +286,7 @@ select#sort-select { display: none; }
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; min-height: 40px;
 }
 
-/* --- NEW: HEADER CONTROLS (BUTTONS) --- */
+/* HEADER CONTROLS (BUTTONS) */
 .header-controls {
     display: flex;
     gap: 8px;
@@ -318,7 +318,7 @@ select#sort-select { display: none; }
 /* --- SHARED CONTAINER STYLES --- */
 #view-glyph, #view-map, #view-timeline {
     flex-grow: 1;
-    border: 2px solid var(--theme-color);
+    border: 2px solid var(--theme-color); /* Yellow borders for all */
     padding: 15px;
     background: rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
@@ -327,12 +327,10 @@ select#sort-select { display: none; }
     width: 100%;
 }
 
-/* GLYPH SPECIFIC */
 #view-glyph {
     overflow-y: auto; 
 }
 
-/* MAP & TIMELINE SPECIFIC */
 #view-map, #view-timeline {
     overflow: hidden;
 }
