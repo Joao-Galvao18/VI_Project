@@ -316,7 +316,8 @@ select#sort-select { display: none; }
 }
 
 /* --- SHARED CONTAINER STYLES --- */
-#view-glyph, #view-map, #view-timeline {
+/* Updated to include #view-heatmap so it grows to fill screen */
+#view-glyph, #view-map, #view-timeline, #view-heatmap {
     flex-grow: 1;
     border: 2px solid var(--theme-color); /* Yellow borders for all */
     padding: 15px;
@@ -325,14 +326,11 @@ select#sort-select { display: none; }
     margin-bottom: 5px;
     position: relative;
     width: 100%;
+    overflow: hidden;
 }
 
 #view-glyph {
     overflow-y: auto; 
-}
-
-#view-map, #view-timeline {
-    overflow: hidden;
 }
 
 /* SCROLLBAR RETRO */
@@ -381,7 +379,7 @@ select#sort-select { display: none; }
 }
 
 /* --- SVG GRAPH STYLES --- */
-.map-svg, .timeline-svg {
+.map-svg, .timeline-svg, .heatmap-svg {
     width: 100%;
     height: 100%;
     display: block;
@@ -438,4 +436,10 @@ select#sort-select { display: none; }
     .matrix-header { flex-direction: column; align-items: flex-start; gap: 10px; }
     .footer { flex-direction: column; height: auto; padding: 10px; gap: 5px; }
     .layout { height: auto; min-height: calc(100vh - 150px); }
+}
+
+/* HEATMAP SPECIFIC STYLES */
+/* Buttons reuse the .filter-btn class, but we ensure text sizing here if needed */
+#view-heatmap {
+    position: relative;
 }

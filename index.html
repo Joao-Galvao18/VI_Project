@@ -24,9 +24,7 @@
         <button class="mode active">GLYPH</button>
         <button class="mode">MAP</button>
         <button class="mode">TIMELINE</button>
-        <button class="mode">RADIAL</button>
         <button class="mode">HEATMAP</button>
-        <button class="mode">SPIRAL</button>
         <button class="mode">BAR</button>
         <button class="mode">SCATTER</button>
         <button class="mode">POLAR</button>
@@ -102,7 +100,7 @@
             </div>
         </aside>
 
-     <section class="matrix">
+<section class="matrix">
          <div class="matrix-header">
              <h2 id="view-title">VISUAL DATA MATRIX</h2>
         
@@ -113,19 +111,25 @@
                 <button class="filter-btn" data-val="long">LONG (&gt;30M)</button>
              </div>
 
+             <div id="heatmap-controls" class="header-controls" style="display: none;">
+                <button class="filter-btn active" id="hm-btn-count">SIGHTINGS</button>
+                <button class="filter-btn" id="hm-btn-dur">DURATION</button>
+             </div>
+
              <div id="map-controls" class="map-controls" style="display: none;">
                  <button id="zoom-in">+</button>
                  <button id="zoom-out">-</button>
                  <button id="zoom-reset">↺</button>
              </div>
          </div>
-
+         
          <div id="view-glyph">
              <div id="glyph-grid"></div>
          </div>
 
          <div id="view-map" style="display: none;"></div>
          <div id="view-timeline" style="display: none;"></div>
+         <div id="view-heatmap" style="display: none;"></div>
 
      </section>
 
@@ -143,7 +147,7 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script type="module" src="js/main.js"></script>
     <div id="tooltip" class="tooltip"></div>
 
 </body>
