@@ -6,7 +6,6 @@
     <title>UFO Sightings Data Matrix</title>
 
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="style.css">
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -107,6 +106,13 @@
          <div class="matrix-header">
              <h2 id="view-title">VISUAL DATA MATRIX</h2>
         
+             <div id="glyph-controls" class="header-controls">
+                <button class="filter-btn active" data-val="all">ALL</button>
+                <button class="filter-btn" data-val="short">SHORT (&lt;5M)</button>
+                <button class="filter-btn" data-val="medium">MED (5-30M)</button>
+                <button class="filter-btn" data-val="long">LONG (&gt;30M)</button>
+             </div>
+
              <div id="map-controls" class="map-controls" style="display: none;">
                  <button id="zoom-in">+</button>
                  <button id="zoom-out">-</button>
@@ -118,17 +124,26 @@
              <div id="glyph-grid"></div>
          </div>
 
-         <div id="view-map" style="display: none;">
-        </div>
-
-        <div id="view-timeline" style="display: none;"></div>
+         <div id="view-map" style="display: none;"></div>
+         <div id="view-timeline" style="display: none;"></div>
 
      </section>
 
     </main>
 
-    <script src="script.js"></script>
+    <footer class="footer">
+        <div class="footer-section">
+            <span class="indicator blink">●</span> SYSTEM STATUS: ONLINE
+        </div>
+        <div class="footer-section center">
+            DATA SOURCE: NUFORC DATABASE
+        </div>
+        <div class="footer-section right">
+            SECURE CONNECTION // V2.0
+        </div>
+    </footer>
 
+    <script src="script.js"></script>
     <div id="tooltip" class="tooltip"></div>
 
 </body>
