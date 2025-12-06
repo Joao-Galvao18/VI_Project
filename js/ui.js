@@ -4,15 +4,17 @@ export function initUI() {
     initFilters();
     initSliders();
     initCustomDropdown();
-    initDurationButtons();
     setupSortingListener();
     initClock();
 }
 
-// Filter Tags (Countries & Shapes)
 function initFilters() {
     const countryList = ["us", "gb", "ca", "au"]; 
-    const shapeList = ["circle", "disk", "light", "fireball", "sphere", "triangle", "formation", "cylinder", "unknown"];
+    // UPDATED LIST: Replaced 'sphere' with 'oval'
+    const shapeList = [
+        "circle", "disk", "light", "fireball", 
+        "oval", "triangle", "formation", "cylinder", "unknown"
+    ];
 
     const cDiv = d3.select("#filter-countries");
     countryList.forEach(c => {
@@ -34,15 +36,6 @@ function initFilters() {
                 d3.select(this).classed("active", state.filters.shapes.has(s));
                 applyFilters();
             });
-    });
-}
-
-function initDurationButtons() {
-    d3.selectAll(".filter-btn").on("click", function() {
-        d3.selectAll(".filter-btn").classed("active", false);
-        d3.select(this).classed("active", true);
-        state.filters.durationCat = d3.select(this).attr("data-val");
-        applyFilters();
     });
 }
 
@@ -138,12 +131,12 @@ function initCustomDropdown() {
     });
 }
 
-// Tooltip Helpers (Exported for Viz modules)
 export function showTooltip(event, d) {
     const t = d3.select("#tooltip");
     const safe = (v, fallback = "Unknown") => (v === undefined || v === null || v === "" ? fallback : v);
     
-    const html = `ID: ${safe(d.id)}\nDate: ${safe(d.datetime)}\nLocation: ${safe(d.city)}, ${safe(d.state)}, ${safe(d.country, "").toUpperCase()}\nShape: ${safe(d.shape)}\nDuration: ${safe(d.durationSeconds)}s (${safe(d.durationCategory)})\n--------------------------------------------------\n${safe(d.comments, "(No comments)")}`;
+    // Removed ID line
+    const html = `Date: ${safe(d.datetime)}\nLocation: ${safe(d.city)}, ${safe(d.state)}, ${safe(d.country, "").toUpperCase()}\nShape: ${safe(d.shape)}\nDuration: ${safe(d.durationSeconds)}s (${safe(d.durationCategory)})\n--------------------------------------------------\n${safe(d.comments, "(No comments)")}`;
     
     t.html(html);
 

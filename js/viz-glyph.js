@@ -26,7 +26,6 @@ export function updateGrid() {
 
     let gridMap = [];   
     let displayList = []; 
-    // Estimation to prevent infinite loops
     const estimatedRows = Math.ceil(filtered.length * 2); 
     const mapSize = numCols * estimatedRows + (numCols * 20); 
     for(let i=0; i<mapSize; i++) gridMap[i] = false;
@@ -73,7 +72,6 @@ export function updateGrid() {
     function processDataList(listToProcess) {
         let cursor = 0;
         while (cursor < listToProcess.length) {
-            // Safety extension
             if (gridCursor + (4 * numCols) >= gridMap.length) {
                 for(let k=0; k < numCols * 10; k++) gridMap.push(false);
             }
@@ -122,30 +120,52 @@ export function updateGrid() {
         processDataList(filtered);
     }
 
-    // Render
     grid.html("");
     const items = grid.selectAll(".item").data(displayList).enter().append("div")
         .attr("class", d => d.type === 'data' ? "glyph" : "filler").attr("style", d => d.style);
     
-    items.filter(d => d.type === 'data').html(d => drawGlyph(d.data))
+    items.filter(d => d.type === 'data').html(d => drawIcon(d.data))
         .on("mousemove", (event, d) => showTooltip(event, d.data)).on("mouseleave", hideTooltip);
 }
 
-function drawGlyph(d) {
-    const color = countryColors[d.country] || "#f8c200";
-    return `<svg width="100%" height="100%" viewBox="0 0 48 48" style="image-rendering: pixelated;">${generateShape(d.shape, color)}</svg>`;
-}
+// ----------------------------------------------------
+// PIXEL ICON ENGINE (24x24)
+// ----------------------------------------------------
+const pixelPaths = {
+    // Disk: Classic Saucer
+    disk: "M4,14 h16 v2 h-16 z M6,12 h12 v2 h-12 z M8,10 h8 v2 h-8 z",
+    
+    // Triangle: Black Triangle
+    triangle: "M11,4 h2 v2 h-2 z M10,6 h4 v2 h-4 z M9,8 h6 v2 h-6 z M8,10 h8 v2 h-8 z M7,12 h10 v2 h-10 z M6,14 h12 v2 h-12 z",
+    
+    // Circle: Ball
+    circle: "M9,4 h6 v2 h-6 z M7,6 h2 v2 h-2 z M15,6 h2 v2 h-2 z M6,8 h1 v8 h-1 z M17,8 h1 v8 h-1 z M7,16 h2 v2 h-2 z M15,16 h2 v2 h-2 z M9,18 h6 v2 h-6 z",
+    
+    // OVAL (Replaces Sphere): Elongated Circle
+    oval: "M6,8 h12 v2 h-12 z M4,10 h16 v4 h-16 z M6,14 h12 v2 h-12 z",
 
-function generateShape(shape, color) {
-    const cx = 24, cy = 24, r = 16;
-    switch (shape) {
-        case "circle": case "sphere": return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" />`;
-        case "disk": return `<rect x="${cx - r}" y="${cy - 8}" width="${2*r}" height="16" fill="${color}" />`;
-        case "cylinder": return `<rect x="${cx - 8}" y="${cy - r}" width="16" height="${2*r}" fill="${color}" />`;
-        case "triangle": return `<polygon points="${cx},${cy-r} ${cx-r},${cy+r} ${cx+r},${cy+r}" fill="${color}" />`;
-        case "light": return `<rect x="${cx - 3}" y="${cy - r}" width="6" height="${2*r}" fill="${color}" /><rect x="${cx - r}" y="${cy - 3}" width="${2*r}" height="6" fill="${color}" />`;
-        case "formation": return `<circle cx="${cx - 16}" cy="${cy}" r="6" fill="${color}" /><circle cx="${cx}" cy="${cy}" r="8" fill="${color}" /><circle cx="${cx + 16}" cy="${cy}" r="6" fill="${color}" />`;
-        case "fireball": return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" /><circle cx="${cx + 10}" cy="${cy - 10}" r="8" fill="${color}" />`;
-        default: return `<text x="18" y="32" font-size="20" fill="${color}">?</text>`;
-    }
+    // Cylinder: Cigar Shape
+    cylinder: "M10,4 h4 v16 h-4 z M10,4 h4 v2 h-4 z M10,18 h4 v2 h-4 z",
+    
+    // Light: Starburst
+    light: "M11,2 h2 v6 h-2 z M11,16 h2 v6 h-2 z M2,11 h6 v2 h-6 z M16,11 h6 v2 h-6 z M11,11 h2 v2 h-2 z",
+    
+    // Fireball: Comet
+    fireball: "M10,8 h6 v6 h-6 z M8,6 h2 v2 h-2 z M14,6 h2 v2 h-2 z M16,8 h2 v2 h-2 z M16,12 h2 v2 h-2 z M14,14 h2 v2 h-2 z M8,14 h2 v2 h-2 z M6,12 h2 v2 h-2 z M6,8 h2 v2 h-2 z",
+    
+    // Formation: V-Shape
+    formation: "M4,6 h4 v4 h-4 z M16,6 h4 v4 h-4 z M10,14 h4 v4 h-4 z",
+    
+    // Unknown: Question Mark "?"
+    unknown: "M9,6 h6 v2 h-6 z M13,8 h2 v2 h-2 z M13,10 h2 v2 h-2 z M11,12 h4 v2 h-4 z M11,16 h2 v2 h-2 z"
+};
+
+function drawIcon(d) {
+    const color = countryColors[d.country] || "#f8c200";
+    let path = pixelPaths[d.shape] || pixelPaths["unknown"];
+    
+    return `
+    <svg width="100%" height="100%" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" style="shape-rendering: crispEdges;">
+        <path d="${path}" fill="${color}" />
+    </svg>`;
 }

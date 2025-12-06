@@ -36,22 +36,19 @@ export function setUpdateCallback(fn) { onUpdate = fn; }
 export function loadData() {
     return d3.csv("data/ufo_full.csv").then(data => {
         
-        const cleanData = [];
+        let validEntries = [];
         const parseDateTime = d3.timeParse("%m/%d/%Y %H:%M");
         const parsePosted = d3.timeParse("%m/%d/%Y");
         
-        // --- 1. STRICT FILTERS ---
-        // Countries: USA, UK, Australia, Canada
+        // Allowed Countries
         const allowedCountries = new Set(["us", "gb", "au", "ca"]);
 
-        // Shapes: Only those present in the UI Filter list
+        // Allowed Shapes (Swapped SPHERE for OVAL)
         const allowedShapes = new Set([
             "circle", "disk", "light", "fireball", 
-            "sphere", "triangle", "formation", "cylinder", "unknown"
+            "oval", "triangle", "formation", "cylinder", "unknown"
         ]);
         
-        let rejectedCount = 0;
-
         data.forEach(row => {
             // Normalize Keys
             let d = {};
@@ -60,30 +57,16 @@ export function loadData() {
                 d[cleanKey] = row[k];
             });
 
-            // A. Check Country
+            // Check Country
             const rawCountry = (d.country || "").toLowerCase().replace(/[^a-z]/g, "");
-            if (!allowedCountries.has(rawCountry)) {
-                rejectedCount++;
-                return; 
-            }
+            if (!allowedCountries.has(rawCountry)) return;
 
-            // B. Check Shape (NEW STRICT FILTER)
+            // Check Shape
             let rawShape = (d.shape || "unknown").trim().toLowerCase();
-            // If shape is empty/missing, default to 'unknown'
             if (rawShape === "") rawShape = "unknown";
-            
-            // If the shape is NOT in our allowed list (e.g. "egg"), SKIP IT.
-            if (!allowedShapes.has(rawShape)) {
-                rejectedCount++;
-                return;
-            }
+            if (!allowedShapes.has(rawShape)) return;
 
-            // C. Check Coordinates
-            const lat = parseFloat(d.latitude);
-            const lng = parseFloat(d.longitude);
-            if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return; 
-
-            // D. Parse Dates
+            // Parse Dates
             const rawTime = d.datetime || "";
             const rawPosted = d.dateposted || "";
             
@@ -103,7 +86,7 @@ export function loadData() {
                 else if (duration <= 1800) cat = "medium";
                 else cat = "long";
 
-                cleanData.push({
+                validEntries.push({
                     id: Math.random().toString(36).substr(2, 9),
                     datetime: rawTime,
                     datetimeParsed: dateParsed, 
@@ -111,33 +94,48 @@ export function loadData() {
                     city: d.city || "Unknown",
                     state: d.state || "",
                     country: rawCountry, 
-                    shape: rawShape, // We know this is valid now
+                    shape: rawShape, 
                     durationSeconds: duration,
                     durationCategory: cat,
                     comments: d.comments || "",
-                    latitude: lat,
-                    longitude: lng
+                    latitude: parseFloat(d.latitude),
+                    longitude: parseFloat(d.longitude)
                 });
             }
         });
 
-        console.log(`Filter Report: Rejected ${rejectedCount} rows (Bad Country or Bad Shape).`);
-        console.log(`Kept ${cleanData.length} Clean Entries.`);
+        // --- CYLINDER BOOSTING LOGIC ---
+        // 1. Separate Cylinders from the rest
+        const cylinders = validEntries.filter(d => d.shape === "cylinder");
+        const others = validEntries.filter(d => d.shape !== "cylinder");
 
-        // 2. Shuffle (To get random distribution of the good data)
-        shuffleArray(cleanData);
+        // 2. Shuffle both piles
+        shuffleArray(cylinders);
+        shuffleArray(others);
 
-        // 3. Slice Top 1000
-        state.rawData = cleanData.slice(0, 1000);
+        // 3. Force up to 50 Cylinders into the list first
+        // (This ensures they appear even if rare)
+        const forcedCylinders = cylinders.slice(0, 50); 
         
-        // 4. Sort Chronologically
+        // 4. Fill the rest of the 1000 spots with random others
+        // (1000 - however many cylinders we found)
+        const remainingSlots = 1000 - forcedCylinders.length;
+        const randomOthers = others.slice(0, remainingSlots);
+
+        // 5. Combine and Shuffle Final List
+        const finalSet = [...forcedCylinders, ...randomOthers];
+        shuffleArray(finalSet);
+
+        state.rawData = finalSet;
+        
+        // Sort Chronologically for initial view
         state.rawData.sort((a, b) => b.datetimeParsed - a.datetimeParsed);
 
+        console.log(`Loaded ${state.rawData.length} entries. (Boosted Cylinders: ${forcedCylinders.length})`);
         applyFilters();
     });
 }
 
-// Fisher-Yates Shuffle
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));

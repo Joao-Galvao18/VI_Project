@@ -3,12 +3,12 @@ import { showTooltip, hideTooltip } from './ui.js';
 
 let polarInitialized = false;
 let svg, g, angleScale, radiusScale;
-let currentMode = "shape"; // "shape" or "duration"
+let currentMode = "shape"; 
 
-// Allowed Shapes
+// UPDATED Allowed Shapes
 const mainShapes = new Set([
     "circle", "disk", "light", "fireball", 
-    "sphere", "triangle", "formation", "cylinder", "unknown"
+    "oval", "triangle", "formation", "cylinder", "unknown"
 ]);
 
 export function initPolar() {
@@ -32,7 +32,7 @@ export function initPolar() {
 
     // Scales
     angleScale = d3.scaleBand().range([0, 2 * Math.PI]).align(0);
-    radiusScale = d3.scaleLinear().range([50, radius]); // Inner radius 50 creates donut hole
+    radiusScale = d3.scaleLinear().range([50, radius]);
 
     // Controls
     d3.select("#polar-btn-shape").on("click", function() { setMode(this, "shape"); });
@@ -77,7 +77,7 @@ export function updatePolar() {
     const maxVal = d3.max(data, d => d.value) || 10;
     radiusScale.domain([0, maxVal]);
 
-    // 3. Define Arc Generator
+    // 3. Define Arc
     const arc = d3.arc()
         .innerRadius(50)
         .outerRadius(d => radiusScale(d.value))
@@ -102,7 +102,7 @@ export function updatePolar() {
         .transition().duration(500)
         .attr("d", arc);
 
-    // 5. Draw Numbers INSIDE the Bars
+    // 5. Draw Numbers INSIDE
     g.selectAll(".polar-value").remove();
     g.selectAll(".polar-value").data(data).enter()
         .append("text")
@@ -110,24 +110,18 @@ export function updatePolar() {
         .attr("text-anchor", "middle")
         .attr("alignment-baseline", "middle")
         .attr("transform", d => {
-            // Calculate center of the arc
             const centroid = arc.centroid(d);
-            
-            // Calculate rotation angle in degrees
             const angle = (angleScale(d.key) + angleScale.bandwidth() / 2) * 180 / Math.PI - 90;
-            
-            // Flip text if it's on the left side (90 to 270 degrees) so it's readable
             const rot = (angle > 90 || angle < -90) ? angle + 180 : angle;
-            
             return `translate(${centroid[0]},${centroid[1]}) rotate(${rot})`;
         })
         .text(d => d.value)
-        .attr("fill", "#000") // Black text for contrast on yellow
+        .attr("fill", "#000") 
         .style("font-size", "12px")
         .style("font-weight", "bold")
-        .style("pointer-events", "none"); // Let clicks pass through to the bar
+        .style("pointer-events", "none"); 
 
-    // 6. Draw Category Labels (Outside)
+    // 6. Draw Labels
     g.selectAll(".polar-label").remove();
     g.selectAll(".polar-label").data(data).enter()
         .append("text")
