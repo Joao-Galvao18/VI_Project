@@ -1,12 +1,11 @@
 import { state, countryColors } from './store.js';
-import { hideTooltip } from './ui.js'; // We only need hideTooltip from UI
+import { hideTooltip } from './ui.js';
 
 let barInitialized = false;
 let svg, g, xScale, yScale, xAxisG, yAxisG;
-let currentMode = "shape"; // "shape" or "country"
+let currentMode = "shape"; // "shape" or "country" or "duration"
 const margin = { top: 20, right: 20, bottom: 60, left: 60 };
 
-// Map codes to nice names for the tooltip
 const countryNames = {
     us: "UNITED STATES",
     gb: "GREAT BRITAIN",
@@ -45,6 +44,7 @@ export function initBar() {
     // Button Listeners
     d3.select("#bar-btn-shape").on("click", function() { setMode(this, "shape"); });
     d3.select("#bar-btn-country").on("click", function() { setMode(this, "country"); });
+    d3.select("#bar-btn-dur").on("click", function() { setMode(this, "duration"); });
 
     barInitialized = true;
     updateBar();
@@ -67,7 +67,12 @@ export function updateBar() {
     // 1. Aggregate Data
     const counts = new Map();
     state.filtered.forEach(d => {
-        let key = currentMode === "shape" ? d.shape : d.country;
+        let key = "unknown";
+        
+        if (currentMode === "shape") key = d.shape;
+        else if (currentMode === "country") key = d.country;
+        else if (currentMode === "duration") key = d.durationCategory; // "short", "medium", "long"
+
         if (!key || key === "") key = "unknown";
         counts.set(key, (counts.get(key) || 0) + 1);
     });
@@ -99,7 +104,7 @@ export function updateBar() {
             .attr("dx", "-.8em")
             .attr("dy", ".15em");
     } else {
-        // Reset rotation for countries
+        // Reset rotation for countries/duration
         xAxisG.selectAll("text").attr("transform", null).style("text-anchor", "middle").attr("dx", "0").attr("dy", "1em");
     }
 
@@ -117,10 +122,10 @@ export function updateBar() {
         .attr("class", "bar-rect")
         .attr("x", d => xScale(d.key))
         .attr("width", xScale.bandwidth())
-        .attr("y", yScale(0)) // Start at bottom for animation
+        .attr("y", yScale(0)) 
         .attr("height", 0)
         .merge(bars)
-        .on("mousemove", (event, d) => showBarTooltip(event, d)) // Use custom tooltip
+        .on("mousemove", (event, d) => showBarTooltip(event, d))
         .on("mouseleave", hideTooltip)
         .transition().duration(500)
         .attr("x", d => xScale(d.key))
@@ -131,35 +136,28 @@ export function updateBar() {
             if (currentMode === "country") {
                 return countryColors[d.key] || "#f8c200";
             }
-            return "#f8c200"; // Default yellow for shapes
+            return "#f8c200"; // Default yellow for shape & duration
         });
 }
 
-// --- CUSTOM TOOLTIP FOR BAR CHART ---
 function showBarTooltip(event, d) {
     const t = d3.select("#tooltip");
     
-    // Determine Label (Translate "us" to "UNITED STATES")
     let label = d.key.toUpperCase();
     if (currentMode === "country" && countryNames[d.key]) {
         label = countryNames[d.key];
     }
 
-    // Simple, clean HTML
     const html = `CATEGORY: ${label}\nTOTAL: ${d.value} SIGHTINGS`;
     
     t.html(html);
 
-    // Positioning Logic
     const padding = 20;
     let x = event.clientX + padding;
     let y = event.clientY + padding;
 
-    // Keep tooltip on screen
     if (x + 220 > window.innerWidth) x = event.clientX - 230;
     if (y + 100 > window.innerHeight) y = event.clientY - 100;
 
-    t.style("left", x + "px")
-     .style("top", y + "px")
-     .style("opacity", 1);
+    t.style("left", x + "px").style("top", y + "px").style("opacity", 1);
 }

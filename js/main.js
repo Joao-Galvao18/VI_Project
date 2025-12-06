@@ -6,10 +6,11 @@ import { initTimeline, updateTimeline } from './viz-timeline.js';
 import { initHeatmap, updateHeatmap } from './viz-heatmap.js';
 import { initBar, updateBar } from './viz-bar.js';
 import { initScatter, updateScatter } from './viz-scatter.js';
-import { initPolar, updatePolar } from './viz-polar.js'; // <--- IMPORT
+import { initPolar, updatePolar } from './viz-polar.js';
 
 let currentView = "glyph";
 
+// 1. Setup the Update Loop
 setUpdateCallback(() => {
     if (currentView === "glyph") updateGrid();
     else if (currentView === "map") updateMap();
@@ -17,14 +18,16 @@ setUpdateCallback(() => {
     else if (currentView === "heatmap") updateHeatmap();
     else if (currentView === "bar") updateBar();
     else if (currentView === "scatter") updateScatter();
-    else if (currentView === "polar") updatePolar(); // <--- UPDATE HOOK
+    else if (currentView === "polar") updatePolar();
 });
 
+// 2. Initialize App
 loadData().then(() => {
     initUI();
     updateGrid();
 });
 
+// 3. Tab Switching Logic
 d3.selectAll(".mode").on("click", function() {
     d3.selectAll(".mode").classed("active", false);
     d3.select(this).classed("active", true);
@@ -36,7 +39,7 @@ d3.selectAll(".mode").on("click", function() {
     else if (mode === "HEATMAP") switchView("heatmap");
     else if (mode === "BAR") switchView("bar");
     else if (mode === "SCATTER") switchView("scatter");
-    else if (mode === "POLAR") switchView("polar"); // <--- CLICK HANDLER
+    else if (mode === "RADIAL") switchView("polar");
     else switchView("glyph");
 });
 
@@ -50,14 +53,22 @@ function switchView(viewName) {
     d3.select("#view-heatmap").style("display", "none");
     d3.select("#view-bar").style("display", "none");
     d3.select("#view-scatter").style("display", "none");
-    d3.select("#view-polar").style("display", "none"); // <--- HIDE POLAR
+    d3.select("#view-polar").style("display", "none");
     
     // Hide ALL Header Controls
     d3.select("#map-controls").style("display", "none");
     d3.select("#glyph-controls").style("display", "none");
     d3.select("#heatmap-controls").style("display", "none");
     d3.select("#bar-controls").style("display", "none");
-    d3.select("#polar-controls").style("display", "none"); // <--- HIDE CONTROLS
+    d3.select("#polar-controls").style("display", "none");
+
+    // --- SORT VISIBILITY LOGIC ---
+    if (viewName === "glyph") {
+        d3.select("#sort-container").style("display", "block");
+    } else {
+        d3.select("#sort-container").style("display", "none");
+    }
+    // -----------------------------
 
     if (viewName === "map") {
         d3.select("#view-map").style("display", "block");
@@ -87,10 +98,10 @@ function switchView(viewName) {
         d3.select("#view-title").text("DURATION CORRELATION");
         initScatter();
 
-    } else if (viewName === "polar") { // <--- ADD INIT LOGIC
+    } else if (viewName === "polar") { 
         d3.select("#view-polar").style("display", "block");
         d3.select("#polar-controls").style("display", "flex");
-        d3.select("#view-title").text("24-HOUR RADIAL SCAN");
+        d3.select("#view-title").text("RADIAL CENSUS");
         initPolar();
 
     } else {
@@ -110,6 +121,6 @@ window.addEventListener("resize", () => {
         else if (currentView === "heatmap") initHeatmap();
         else if (currentView === "bar") initBar();
         else if (currentView === "scatter") updateScatter();
-        else if (currentView === "polar") initPolar(); // <--- ADD RESIZE
+        else if (currentView === "polar") initPolar();
     }, 100);
 });

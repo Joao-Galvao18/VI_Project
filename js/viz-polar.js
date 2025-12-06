@@ -1,11 +1,11 @@
-import { state } from './store.js';
+import { state, countryColors } from './store.js';
 import { showTooltip, hideTooltip } from './ui.js';
 
 let polarInitialized = false;
 let svg, g, angleScale, radiusScale;
-let currentMode = "shape"; 
+let currentMode = "shape"; // "shape" or "country" or "duration"
 
-// UPDATED Allowed Shapes
+// Allowed Shapes
 const mainShapes = new Set([
     "circle", "disk", "light", "fireball", 
     "oval", "triangle", "formation", "cylinder", "unknown"
@@ -36,6 +36,7 @@ export function initPolar() {
 
     // Controls
     d3.select("#polar-btn-shape").on("click", function() { setMode(this, "shape"); });
+    d3.select("#polar-btn-country").on("click", function() { setMode(this, "country"); });
     d3.select("#polar-btn-dur").on("click", function() { setMode(this, "duration"); });
 
     polarInitialized = true;
@@ -59,12 +60,16 @@ export function updatePolar() {
     const counts = new Map();
     state.filtered.forEach(d => {
         let key = "unknown";
+        
         if (currentMode === "shape") {
             if (mainShapes.has(d.shape)) key = d.shape;
             else key = "other";
-        } else {
+        } else if (currentMode === "country") {
+            key = d.country || "unknown";
+        } else if (currentMode === "duration") {
             key = d.durationCategory || "unknown";
         }
+        
         counts.set(key, (counts.get(key) || 0) + 1);
     });
 
@@ -94,13 +99,18 @@ export function updatePolar() {
     bars.enter()
         .append("path")
         .attr("class", "polar-path")
-        .attr("fill", "#f8c200")
         .attr("d", arc)
         .on("mousemove", (event, d) => showPolarBarTooltip(event, d))
         .on("mouseleave", hideTooltip)
         .merge(bars)
         .transition().duration(500)
-        .attr("d", arc);
+        .attr("d", arc)
+        .attr("fill", d => {
+            if (currentMode === "country") {
+                return countryColors[d.key] || "#f8c200";
+            }
+            return "#f8c200"; // Yellow for shape & duration
+        });
 
     // 5. Draw Numbers INSIDE
     g.selectAll(".polar-value").remove();
@@ -142,7 +152,14 @@ export function updatePolar() {
 
 function showPolarBarTooltip(event, d) {
     const t = d3.select("#tooltip");
-    const html = `CATEGORY: ${d.key.toUpperCase()}\nCOUNT: ${d.value}`;
+    
+    let name = d.key.toUpperCase();
+    if (currentMode === "country") {
+        const map = {us:"UNITED STATES", gb:"GREAT BRITAIN", ca:"CANADA", au:"AUSTRALIA", de:"GERMANY"};
+        if (map[d.key]) name = map[d.key];
+    }
+    
+    const html = `CATEGORY: ${name}\nCOUNT: ${d.value}`;
     t.html(html);
 
     let x = event.clientX + 20;

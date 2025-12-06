@@ -1,10 +1,15 @@
-import { state } from './store.js';
+import { state, countryColors } from './store.js';
 import { showTooltip, hideTooltip } from './ui.js';
 
 let heatmapInitialized = false;
 let svg, g, xScale, yScale, colorScale;
-let currentMetric = "count"; 
-const margin = { top: 40, right: 20, bottom: 20, left: 40 };
+let currentMode = "count"; // "count", "duration", "country"
+const margin = { top: 40, right: 20, bottom: 20, left: 60 };
+
+// Helper for nice labels
+const countryLabels = {
+    us: "USA", gb: "UK", ca: "CAN", au: "AUS", de: "DEU", unknown: "?"
+};
 
 export function initHeatmap() {
     heatmapInitialized = false;
@@ -25,22 +30,24 @@ export function initHeatmap() {
     g = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    // Initial Scales (Ranges)
     xScale = d3.scaleBand().range([0, width - margin.left - margin.right]).padding(0.05);
     yScale = d3.scaleBand().range([0, height]).padding(0.05);
     
-    // Sqrt scale for better visibility of low numbers
+    // Color Scale (for Temporal modes)
     colorScale = d3.scaleSqrt().range(["#331a00", "#ffcc00"]);
 
-    // Clear old listeners before adding new ones to prevent duplicates
-    d3.select("#hm-btn-count").on("click", null).on("click", function() { setMetric(this, "count"); });
-    d3.select("#hm-btn-dur").on("click", null).on("click", function() { setMetric(this, "duration"); });
+    // Event Listeners
+    d3.select("#hm-btn-count").on("click", function() { setMode(this, "count"); });
+    d3.select("#hm-btn-dur").on("click", function() { setMode(this, "duration"); });
+    d3.select("#hm-btn-country").on("click", function() { setMode(this, "country"); });
 
     heatmapInitialized = true;
     updateHeatmap();
 }
 
-function setMetric(btn, metric) {
-    currentMetric = metric;
+function setMode(btn, mode) {
+    currentMode = mode;
     d3.selectAll("#heatmap-controls .filter-btn").classed("active", false);
     d3.select(btn).classed("active", true);
     updateHeatmap();
@@ -54,61 +61,120 @@ export function updateHeatmap() {
 
     const data = state.filtered;
     const { yearMin, yearMax } = state.filters;
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     
+    // Generate Year List (Used in both modes)
     const years = [];
     for (let y = yearMin; y <= yearMax; y++) years.push(y);
 
-    const buckets = new Map();
-    years.forEach(y => {
-        months.forEach((m, i) => {
-            buckets.set(`${y}-${i}`, { count: 0, totalDur: 0, year: y, monthIndex: i, monthName: m });
+    let plotData = [];
+    
+    // --- MODE SWITCHING LOGIC ---
+
+    if (currentMode === "country") {
+        // --- COUNTRY MODE: Y=Country, X=Year ---
+        const countries = ["us", "gb", "ca", "au"];
+        
+        // 1. Initialize Buckets
+        const buckets = new Map();
+        countries.forEach(c => {
+            years.forEach(y => {
+                buckets.set(`${c}-${y}`, { 
+                    xVal: y, yVal: c, count: 0, 
+                    id: `${c}-${y}` 
+                });
+            });
         });
-    });
 
-    data.forEach(d => {
-        // Safe check for valid parsed date
-        if (!d.datetimeParsed) return;
+        // 2. Fill Data
+        data.forEach(d => {
+            if (!d.datetimeParsed) return;
+            const y = d.datetimeParsed.getFullYear();
+            if (y < yearMin || y > yearMax) return;
+            
+            const key = `${d.country}-${y}`;
+            const b = buckets.get(key);
+            if (b) b.count++;
+        });
 
-        const y = d.datetimeParsed.getFullYear();
-        if (y < yearMin || y > yearMax) return;
+        plotData = Array.from(buckets.values());
+
+        // 3. Set Domains
+        xScale.domain(years);
+        yScale.domain(countries); // Y-Axis is Countries
+
+    } else {
+        // --- TEMPORAL MODE: Y=Year, X=Month ---
+        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
         
-        const m = d.datetimeParsed.getMonth(); 
-        const key = `${y}-${m}`;
+        const buckets = new Map();
+        years.forEach(y => {
+            months.forEach((m, i) => {
+                buckets.set(`${y}-${i}`, { 
+                    xVal: m, yVal: y, count: 0, totalDur: 0, 
+                    monthIndex: i, id: `${y}-${i}` 
+                });
+            });
+        });
+
+        data.forEach(d => {
+            if (!d.datetimeParsed) return;
+            const y = d.datetimeParsed.getFullYear();
+            if (y < yearMin || y > yearMax) return;
+            
+            const m = d.datetimeParsed.getMonth(); 
+            const key = `${y}-${m}`;
+            
+            const b = buckets.get(key);
+            if (b) {
+                b.count++;
+                b.totalDur += (d.durationSeconds || 0);
+            }
+        });
+
+        plotData = Array.from(buckets.values());
+
+        xScale.domain(months);
+        yScale.domain(years); // Y-Axis is Years
         
-        const b = buckets.get(key);
-        if (b) {
-            b.count++;
-            b.totalDur += (d.durationSeconds || 0);
-        }
-    });
+        // Calculate Max for Color Scale
+        const maxValue = d3.max(plotData, d => {
+            return currentMode === "count" ? d.count : (d.count > 0 ? d.totalDur / d.count : 0);
+        }) || 1;
+        colorScale.domain([0, maxValue]);
+    }
 
-    const plotData = Array.from(buckets.values());
+    // --- DRAWING ---
 
-    xScale.domain(months);
-    yScale.domain(years);
-
-    const maxValue = d3.max(plotData, d => {
-        return currentMetric === "count" ? d.count : (d.count > 0 ? d.totalDur / d.count : 0);
-    }) || 1;
-
-    colorScale.domain([0, maxValue]);
-
-    // Draw X Axis
+    // X Axis
     g.selectAll(".x-axis").remove();
+    const xAxis = d3.axisTop(xScale).tickSize(0);
+    
+    // Reduce ticks if years are crowded (Country Mode)
+    if (currentMode === "country" && years.length > 20) {
+        xAxis.tickValues(years.filter(y => y % 5 === 0));
+    }
+
     g.append("g").attr("class", "x-axis")
-        .call(d3.axisTop(xScale).tickSize(0))
+        .call(xAxis)
         .selectAll("text")
         .attr("fill", "#f8c200")
         .attr("font-family", "VT323")
         .style("font-size", "14px");
 
-    // Draw Y Axis
+    // Y Axis
     g.selectAll(".y-axis").remove();
     const yAxis = d3.axisLeft(yScale).tickSize(0);
-    // Reduce ticks if zoomed out
-    if (years.length > 40) yAxis.tickValues(years.filter(y => y % 5 === 0));
     
+    // Reduce ticks if years are crowded (Temporal Mode)
+    if (currentMode !== "country" && years.length > 40) {
+        yAxis.tickValues(years.filter(y => y % 5 === 0));
+    }
+    
+    // Format Country Labels
+    if (currentMode === "country") {
+        yAxis.tickFormat(d => countryLabels[d] || d.toUpperCase());
+    }
+
     g.append("g").attr("class", "y-axis")
         .call(yAxis)
         .selectAll("text")
@@ -118,45 +184,69 @@ export function updateHeatmap() {
 
     g.selectAll(".domain").remove();
 
-    // --- DRAW CELLS ---
-    const cells = g.selectAll(".cell").data(plotData, d => `${d.year}-${d.monthIndex}`);
+    // Cells
+    const cells = g.selectAll(".cell").data(plotData, d => d.id);
 
-    // Remove old cells INSTANTLY (no transition)
     cells.exit().remove();
 
-    // Update new and existing cells
-    // IMPORTANT: I removed .transition() so the grid snaps instantly when filtering
     cells.enter()
         .append("rect")
         .attr("class", "cell")
-        .merge(cells)
-        .attr("x", d => xScale(d.monthName))
-        .attr("y", d => yScale(d.year))
+        .attr("x", d => xScale(d.xVal))
+        .attr("y", d => yScale(d.yVal))
         .attr("width", xScale.bandwidth())
         .attr("height", yScale.bandwidth())
         .style("stroke", "#000")
         .style("stroke-width", 1)
+        .merge(cells)
+        .on("mousemove", (event, d) => showHeatmapTooltip(event, d))
+        .on("mouseleave", hideTooltip)
+        .transition().duration(0) // Instant update for responsiveness
+        .attr("x", d => xScale(d.xVal))
+        .attr("y", d => yScale(d.yVal))
+        .attr("width", xScale.bandwidth())
+        .attr("height", yScale.bandwidth())
         .attr("fill", d => {
-            const val = currentMetric === "count" ? d.count : (d.count > 0 ? d.totalDur / d.count : 0);
+            // Country Mode Coloring
+            if (currentMode === "country") {
+                if (d.count === 0) return "rgba(248, 194, 0, 0.08)";
+                // Use Country Color but with opacity based on count? 
+                // Or just the solid color if > 0? Let's use opacity for density effect.
+                const baseColor = countryColors[d.yVal] || "#f8c200";
+                // Simple density check: if it has data, show it. 
+                // For a heatmap effect, we'd need a max domain for countries, 
+                // but let's keep it simple: Solid color if data exists.
+                return baseColor;
+            }
+            
+            // Temporal Mode Coloring
+            const val = currentMode === "count" ? d.count : (d.count > 0 ? d.totalDur / d.count : 0);
             return val === 0 ? "rgba(248, 194, 0, 0.08)" : colorScale(val);
         })
-        .on("mousemove", (event, d) => showHeatmapTooltip(event, d))
-        .on("mouseleave", hideTooltip);
+        .style("opacity", d => {
+            // Add slight transparency to Country mode to simulate density if needed,
+            // or just keep it solid. Solid looks cleaner for pixel art style.
+            return 1;
+        });
 }
 
 function showHeatmapTooltip(event, d) {
     const t = d3.select("#tooltip");
-    const val = currentMetric === "count" ? d.count : (d.count > 0 ? Math.round(d.totalDur / d.count) : 0);
-    const label = currentMetric === "count" ? "SIGHTINGS" : "AVG DURATION (s)";
     
-    t.html(`DATE: ${d.monthName} ${d.year}\n${label}: ${val}`);
+    let html = "";
+    if (currentMode === "country") {
+        html = `YEAR: ${d.xVal}\nCOUNTRY: ${(countryLabels[d.yVal] || d.yVal).toUpperCase()}\nSIGHTINGS: ${d.count}`;
+    } else {
+        const val = currentMode === "count" ? d.count : (d.count > 0 ? Math.round(d.totalDur / d.count) : 0);
+        const label = currentMode === "count" ? "SIGHTINGS" : "AVG DURATION (s)";
+        html = `DATE: ${d.xVal} ${d.yVal}\n${label}: ${val}`;
+    }
+    
+    t.html(html);
     
     let x = event.clientX + 20;
     let y = event.clientY + 20;
-    
-    // Keep inside window
     if (x + 220 > window.innerWidth) x = event.clientX - 230;
-    if (y + 100 > window.innerHeight) y = event.clientY - 100;
     
     t.style("left", x + "px").style("top", y + "px").style("opacity", 1);
 }

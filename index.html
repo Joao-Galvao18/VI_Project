@@ -24,10 +24,10 @@
         <button class="mode active">GLYPH</button>
         <button class="mode">MAP</button>
         <button class="mode">TIMELINE</button>
+        <button class="mode">SCATTER</button>
         <button class="mode">HEATMAP</button>
         <button class="mode">BAR</button>
-        <button class="mode">SCATTER</button>
-        <button class="mode">POLAR</button>
+        <button class="mode">RADIAL</button>
     </nav>
 
     <main class="layout">
@@ -86,7 +86,7 @@
                 </div>
             </div>
 
-            <div class="filter-section">
+            <div class="filter-section" id="sort-container">
                 <h3>Sort By</h3>
                 <select id="sort-select" class="retro-select">
                     <option value="newest">Newest → Oldest</option>
@@ -114,16 +114,19 @@
              <div id="heatmap-controls" class="header-controls" style="display: none;">
                 <button class="filter-btn active" id="hm-btn-count">SIGHTINGS</button>
                 <button class="filter-btn" id="hm-btn-dur">DURATION</button>
+                <button class="filter-btn" id="hm-btn-country">BY COUNTRY</button>
              </div>
 
              <div id="bar-controls" class="header-controls" style="display: none;">
                 <button class="filter-btn active" id="bar-btn-shape">BY SHAPE</button>
                 <button class="filter-btn" id="bar-btn-country">BY COUNTRY</button>
+                <button class="filter-btn" id="bar-btn-dur">BY DURATION</button>
              </div>
 
              <div id="polar-controls" class="header-controls" style="display: none;">
-                <button class="filter-btn active" id="polar-btn-shape">COLOR: SHAPE</button>
-                <button class="filter-btn" id="polar-btn-dur">COLOR: DURATION</button>
+                <button class="filter-btn active" id="polar-btn-shape">BY SHAPE</button>
+                <button class="filter-btn" id="polar-btn-country">BY COUNTRY</button>
+                <button class="filter-btn" id="polar-btn-dur">BY DURATION</button>
              </div>
 
              <div id="map-controls" class="map-controls" style="display: none;">
@@ -139,9 +142,8 @@
 
          <div id="view-map" style="display: none;"></div>
          <div id="view-timeline" style="display: none;"></div>
-         <div id="view-heatmap" style="display: none;"></div>
+         <div id="view-scatter" style="display: none;"></div> <div id="view-heatmap" style="display: none;"></div>
          <div id="view-bar" style="display: none;"></div>
-         <div id="view-scatter" style="display: none;"></div>
          <div id="view-polar" style="display: none;"></div>
 
      </section>
