@@ -43,7 +43,7 @@ export function loadData() {
         // Allowed Countries
         const allowedCountries = new Set(["us", "gb", "au", "ca"]);
 
-        // Allowed Shapes (Swapped SPHERE for OVAL)
+        // Allowed Shapes (OVAL is key here)
         const allowedShapes = new Set([
             "circle", "disk", "light", "fireball", 
             "oval", "triangle", "formation", "cylinder", "unknown"
@@ -64,6 +64,10 @@ export function loadData() {
             // Check Shape
             let rawShape = (d.shape || "unknown").trim().toLowerCase();
             if (rawShape === "") rawShape = "unknown";
+            
+            // Map "sphere" to "oval" if found, just in case
+            if (rawShape === "sphere") rawShape = "oval"; 
+
             if (!allowedShapes.has(rawShape)) return;
 
             // Parse Dates
@@ -105,33 +109,24 @@ export function loadData() {
         });
 
         // --- CYLINDER BOOSTING LOGIC ---
-        // 1. Separate Cylinders from the rest
         const cylinders = validEntries.filter(d => d.shape === "cylinder");
         const others = validEntries.filter(d => d.shape !== "cylinder");
 
-        // 2. Shuffle both piles
         shuffleArray(cylinders);
         shuffleArray(others);
 
-        // 3. Force up to 50 Cylinders into the list first
-        // (This ensures they appear even if rare)
+        // Force 50 cylinders
         const forcedCylinders = cylinders.slice(0, 50); 
-        
-        // 4. Fill the rest of the 1000 spots with random others
-        // (1000 - however many cylinders we found)
         const remainingSlots = 1000 - forcedCylinders.length;
         const randomOthers = others.slice(0, remainingSlots);
 
-        // 5. Combine and Shuffle Final List
         const finalSet = [...forcedCylinders, ...randomOthers];
         shuffleArray(finalSet);
 
         state.rawData = finalSet;
-        
-        // Sort Chronologically for initial view
         state.rawData.sort((a, b) => b.datetimeParsed - a.datetimeParsed);
 
-        console.log(`Loaded ${state.rawData.length} entries. (Boosted Cylinders: ${forcedCylinders.length})`);
+        console.log(`Loaded ${state.rawData.length} entries.`);
         applyFilters();
     });
 }

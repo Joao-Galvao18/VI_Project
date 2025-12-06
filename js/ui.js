@@ -3,20 +3,23 @@ import { state, applyFilters } from './store.js';
 export function initUI() {
     initFilters();
     initSliders();
+    initDurationButtons(); // <--- ADDED BACK
     initCustomDropdown();
     setupSortingListener();
     initClock();
 }
 
+// 1. Sidebar Filters (Countries & Shapes)
 function initFilters() {
     const countryList = ["us", "gb", "ca", "au"]; 
-    // UPDATED LIST: Replaced 'sphere' with 'oval'
     const shapeList = [
         "circle", "disk", "light", "fireball", 
         "oval", "triangle", "formation", "cylinder", "unknown"
     ];
 
     const cDiv = d3.select("#filter-countries");
+    cDiv.html(""); 
+    
     countryList.forEach(c => {
         cDiv.append("div").attr("class", "tag").text(c.toUpperCase())
             .on("click", function () {
@@ -28,8 +31,10 @@ function initFilters() {
     });
 
     const sDiv = d3.select("#filter-shapes");
+    sDiv.html(""); 
+
     shapeList.forEach(s => {
-        sDiv.append("div").attr("class", "tag").text(s)
+        sDiv.append("div").attr("class", "tag").text(s.toUpperCase())
             .on("click", function () {
                 if (state.filters.shapes.has(s)) state.filters.shapes.delete(s);
                 else state.filters.shapes.add(s);
@@ -39,6 +44,22 @@ function initFilters() {
     });
 }
 
+// 2. Top Bar Filters (Glyph Grid Duration Buttons)
+function initDurationButtons() {
+    // We strictly target #glyph-controls to avoid breaking the other charts
+    d3.selectAll("#glyph-controls .filter-btn").on("click", function() {
+        
+        // Visual Update: Only remove 'active' from THIS group of buttons
+        d3.selectAll("#glyph-controls .filter-btn").classed("active", false);
+        d3.select(this).classed("active", true);
+
+        // Data Update
+        state.filters.durationCat = d3.select(this).attr("data-val");
+        applyFilters();
+    });
+}
+
+// 3. Sidebar Sliders
 function initSliders() {
     const yearMinSlider = document.getElementById("year-min");
     const yearMaxSlider = document.getElementById("year-max");
@@ -79,6 +100,7 @@ function initSliders() {
     durMaxSlider.oninput = updateDur;
 }
 
+// 4. Sort Dropdown
 function setupSortingListener() {
     const select = document.getElementById("sort-select");
     if (!select) return;
@@ -91,6 +113,8 @@ function setupSortingListener() {
 function initCustomDropdown() {
     const originalSelect = document.getElementById("sort-select");
     if (!originalSelect) return;
+
+    if (originalSelect.parentNode.classList.contains("custom-select-wrapper")) return;
 
     const wrapper = document.createElement("div");
     wrapper.classList.add("custom-select-wrapper");
@@ -131,11 +155,11 @@ function initCustomDropdown() {
     });
 }
 
+// 5. Tooltip Helpers
 export function showTooltip(event, d) {
     const t = d3.select("#tooltip");
     const safe = (v, fallback = "Unknown") => (v === undefined || v === null || v === "" ? fallback : v);
     
-    // Removed ID line
     const html = `Date: ${safe(d.datetime)}\nLocation: ${safe(d.city)}, ${safe(d.state)}, ${safe(d.country, "").toUpperCase()}\nShape: ${safe(d.shape)}\nDuration: ${safe(d.durationSeconds)}s (${safe(d.durationCategory)})\n--------------------------------------------------\n${safe(d.comments, "(No comments)")}`;
     
     t.html(html);
