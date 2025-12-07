@@ -25,6 +25,7 @@ setUpdateCallback(() => {
 loadData().then(() => {
     initUI();
     updateGrid();
+    initGlitchController(); // <--- START THE GLITCH LOOP
 });
 
 // 3. Tab Switching Logic
@@ -68,7 +69,6 @@ function switchView(viewName) {
     } else {
         d3.select("#sort-container").style("display", "none");
     }
-    // -----------------------------
 
     if (viewName === "map") {
         d3.select("#view-map").style("display", "block");
@@ -124,3 +124,57 @@ window.addEventListener("resize", () => {
         else if (currentView === "polar") initPolar();
     }, 100);
 });
+
+
+// ==========================================
+// 4. THE FAULTY TERMINAL GLITCH CONTROLLER
+// ==========================================
+
+function initGlitchController() {
+    const glitchClasses = ['glitch-tear', 'glitch-rgb', 'glitch-squash'];
+    
+    // Selectable elements to target for glitches
+    // We avoid the whole container to keep the app usable
+    const targetSelectors = [
+        'h1', 
+        'h2', 
+        '.version', 
+        '.mode.active', 
+        '.footer-section', 
+        '.filter-stats div',
+        '#view-title',
+        'button.active'
+    ];
+
+    function triggerRandomGlitch() {
+        // 1. Roll the dice. 30% chance to glitch something this cycle.
+        if (Math.random() > 0.3) {
+            
+            // 2. Pick a random selector
+            const randomSelector = targetSelectors[Math.floor(Math.random() * targetSelectors.length)];
+            const elements = document.querySelectorAll(randomSelector);
+            
+            if (elements.length > 0) {
+                // 3. Pick a random specific element from that group
+                const target = elements[Math.floor(Math.random() * elements.length)];
+                
+                // 4. Pick a random glitch effect
+                const effect = glitchClasses[Math.floor(Math.random() * glitchClasses.length)];
+                
+                // 5. Apply Effect
+                target.classList.add(effect);
+                
+                // 6. Remove Effect quickly (50ms to 250ms)
+                setTimeout(() => {
+                    target.classList.remove(effect);
+                }, Math.random() * 200 + 50);
+            }
+        }
+        
+        // 7. Loop recursively with random timing (glitches happen every 0.5s to 2.5s)
+        setTimeout(triggerRandomGlitch, Math.random() * 2000 + 500);
+    }
+
+    // Start the chaos
+    triggerRandomGlitch();
+}
