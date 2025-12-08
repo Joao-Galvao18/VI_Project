@@ -20,7 +20,6 @@ export function initMap() {
     mapSvg.call(zoom);
     mapG = mapSvg.append("g");
 
-    // We use a public URL for world atlas, or you can host locally
     d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
         const countries = topojson.feature(world, world.objects.countries);
         mapG.append("path").datum(d3.geoGraticule()).attr("class", "graticule").attr("d", path);
@@ -29,7 +28,6 @@ export function initMap() {
         updateMap();
     });
 
-    // Re-bind map controls
     d3.select("#zoom-in").on("click", () => mapSvg.transition().call(zoom.scaleBy, 1.5));
     d3.select("#zoom-out").on("click", () => mapSvg.transition().call(zoom.scaleBy, 0.75));
     d3.select("#zoom-reset").on("click", () => mapSvg.transition().call(zoom.transform, d3.zoomIdentity));

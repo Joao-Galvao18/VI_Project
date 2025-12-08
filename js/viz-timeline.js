@@ -35,10 +35,8 @@ export function initTimeline() {
 export function updateTimeline() {
     if (!timelineInitialized) return;
 
-    // --- FIX: Update the Sidebar Stats ---
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
-    // -------------------------------------
 
     const counts = new Map();
     const { yearMin, yearMax } = state.filters;

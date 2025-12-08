@@ -3,7 +3,7 @@ import { hideTooltip } from './ui.js';
 
 let barInitialized = false;
 let svg, g, xScale, yScale, xAxisG, yAxisG;
-let currentMode = "shape"; // "shape" or "country" or "duration"
+let currentMode = "shape";
 const margin = { top: 20, right: 20, bottom: 60, left: 60 };
 
 const countryNames = {
@@ -33,15 +33,12 @@ export function initBar() {
     g = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Setup Scales
     xScale = d3.scaleBand().range([0, width - margin.left - margin.right]).padding(0.2);
     yScale = d3.scaleLinear().range([height, 0]);
 
-    // Setup Axis Groups
     xAxisG = g.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
     yAxisG = g.append("g").attr("class", "y-axis");
 
-    // Button Listeners
     d3.select("#bar-btn-shape").on("click", function() { setMode(this, "shape"); });
     d3.select("#bar-btn-country").on("click", function() { setMode(this, "country"); });
     d3.select("#bar-btn-dur").on("click", function() { setMode(this, "duration"); });
@@ -60,43 +57,36 @@ function setMode(btn, mode) {
 export function updateBar() {
     if (!barInitialized) return;
     
-    // Update Stats
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
-    // 1. Aggregate Data
     const counts = new Map();
     state.filtered.forEach(d => {
         let key = "unknown";
         
         if (currentMode === "shape") key = d.shape;
         else if (currentMode === "country") key = d.country;
-        else if (currentMode === "duration") key = d.durationCategory; // "short", "medium", "long"
+        else if (currentMode === "duration") key = d.durationCategory;
 
         if (!key || key === "") key = "unknown";
         counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    // Convert to Array and Sort (Highest first)
     let data = Array.from(counts, ([key, value]) => ({ key, value }));
     data.sort((a, b) => b.value - a.value);
 
-    // 2. Update Domains
     xScale.domain(data.map(d => d.key));
     yScale.domain([0, d3.max(data, d => d.value) || 10]);
 
-    // 3. Draw Axes
     const xAxis = d3.axisBottom(xScale);
     const yAxis = d3.axisLeft(yScale).ticks(5);
 
     xAxisG.transition().duration(500).call(xAxis);
     yAxisG.transition().duration(500).call(yAxis);
 
-    // Style Axes
     d3.selectAll(".bar-svg text").attr("fill", "#f8c200").attr("font-family", "VT323").style("font-size", "16px");
     d3.selectAll(".bar-svg line, .bar-svg path").attr("stroke", "#f8c200");
 
-    // Rotated text if many shapes
     if (currentMode === "shape") {
         xAxisG.selectAll("text")
             .attr("transform", "rotate(-45)")
@@ -104,11 +94,9 @@ export function updateBar() {
             .attr("dx", "-.8em")
             .attr("dy", ".15em");
     } else {
-        // Reset rotation for countries/duration
         xAxisG.selectAll("text").attr("transform", null).style("text-anchor", "middle").attr("dx", "0").attr("dy", "1em");
     }
 
-    // 4. Draw Bars
     const bars = g.selectAll(".bar-rect").data(data, d => d.key);
 
     bars.exit()
@@ -136,7 +124,7 @@ export function updateBar() {
             if (currentMode === "country") {
                 return countryColors[d.key] || "#f8c200";
             }
-            return "#f8c200"; // Default yellow for shape & duration
+            return "#f8c200";
         });
 }
 

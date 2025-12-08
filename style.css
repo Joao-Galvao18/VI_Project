@@ -35,7 +35,7 @@ body::before {
     pointer-events: none;
 }
 
-/* --- 3. CRT CONTAINER (The Monitor Frame) --- */
+/*CONTROLS*/
 .crt-container {
     width: 100vw;
     height: 100vh;
@@ -48,24 +48,19 @@ body::before {
 
 }
 
-/* --- 4. THE SCREEN (The Bulge & Content) --- */
+/*MAIN CONTENT*/
 .crt-screen {
     width: 98vw;
     height: 96vh;
     background: rgba(10, 20, 10, 0.6);
     border: 2px solid var(--theme-color);
-    border-radius: 20px; /* Rounded corners */
+    border-radius: 20px;
     position: relative;
     z-index: 10;
-    
-    /* THE GLOWING BLOOM TEXT */
     text-shadow: 0 0 2px var(--theme-color), 0 0 8px rgba(0, 255, 65, 0.6);
-    
-
     overflow: hidden;
 }
 
-/* --- 5. SCANLINES & NOISE OVERLAY --- */
 .scanlines {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -73,7 +68,6 @@ body::before {
     z-index: 999;
     border-radius: 20px;
     
-    /* Scanline Gradient */
     background: linear-gradient(
         to bottom,
         rgba(255,255,255,0),
@@ -85,7 +79,6 @@ body::before {
     animation: scanline-move 10s linear infinite;
 }
 
-/* Flickering overlay */
 .scanlines::before {
     content: " ";
     display: block;
@@ -107,9 +100,6 @@ body::before {
     100% { opacity: 0.95; }
 }
 
-/* --- 6. VIOLENT ELEMENT GLITCH CLASSES (Triggered by JS) --- */
-
-/* Text/Element Horizontal Tearing */
 .glitch-tear {
     animation: tear-anim 0.2s steps(2) infinite;
     position: relative;
@@ -133,7 +123,6 @@ body::before {
     100% { transform: skewX(0deg); }
 }
 
-/* RGB Split / Color Shift */
 .glitch-rgb {
     text-shadow: 
         2px 0 rgb(55, 255, 0),
@@ -141,7 +130,6 @@ body::before {
     transform: translateX(2px);
 }
 
-/* Vertical Compress/Stretch */
 .glitch-squash {
     animation: squash-anim 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
 }
@@ -152,9 +140,6 @@ body::before {
     100% { transform: scaleY(1); }
 }
 
-
-
-/* HEADER */
 .header {
     display: flex;
     justify-content: space-between;
@@ -170,7 +155,6 @@ body::before {
     margin: 0;
 }
 
-/* MODES NAV */
 .modes {
     border-bottom: 2px solid var(--theme-color);
     padding: 10px;
@@ -196,16 +180,13 @@ body::before {
     color: black;
 }
 
-/* MAIN LAYOUT */
 .layout {
     display: grid;
     grid-template-columns: 280px 1fr;
-    /* Calculated height to connect sidebar exactly to footer */
     height: calc(100vh - var(--header-height) - var(--nav-height) - var(--footer-height));
     overflow: hidden;
 }
 
-/* FILTERS SIDEBAR */
 .filters {
     border-right: 2px solid var(--theme-color);
     padding: 15px;
@@ -214,7 +195,6 @@ body::before {
     height: 100%;
 }
 
-/* STYLED SCROLLBAR FOR FILTERS */
 .filters::-webkit-scrollbar {
     width: 10px;
     background: #000;
@@ -231,7 +211,6 @@ body::before {
     background-color: #ffe066;
 }
 
-/* Filter Header */
 .filter-header {
     display: flex;
     justify-content: space-between;
@@ -274,7 +253,6 @@ body::before {
     gap: 6px;
 }
 
-/* TAGS */
 .tag {
     padding: 3px 8px;
     border: 1px solid var(--theme-color);
@@ -289,7 +267,6 @@ body::before {
     border-color: #004fff;
 }
 
-/* DOUBLE SLIDERS */
 .range-container {
     position: relative;
     width: 100%;
@@ -349,7 +326,6 @@ body::before {
     color: var(--theme-color);
 }
 
-/* CUSTOM RETRO DROPDOWN */
 select#sort-select { display: none; }
 
 .custom-select-wrapper {
@@ -402,7 +378,6 @@ select#sort-select { display: none; }
 .custom-option.selected:hover { color: black; }
 
 
-/* MATRIX CONTAINER */
 .matrix {
     padding: 20px;
     background: #000;
@@ -421,7 +396,6 @@ select#sort-select { display: none; }
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; min-height: 40px;
 }
 
-/* HEADER CONTROLS (BUTTONS) */
 .header-controls {
     display: flex;
     gap: 8px;
@@ -450,8 +424,6 @@ select#sort-select { display: none; }
     font-weight: bold;
 }
 
-/* --- SHARED CONTAINER STYLES --- */
-/* Consolidated list of all views */
 #view-glyph, #view-map, #view-timeline, #view-heatmap, #view-bar, #view-scatter, #view-polar {
     flex-grow: 1;
     border: 2px solid var(--theme-color);
@@ -461,15 +433,13 @@ select#sort-select { display: none; }
     margin-bottom: 5px;
     position: relative;
     width: 100%;
-    overflow: hidden; /* Default hidden for charts */
+    overflow: hidden;
 }
 
-/* OVERRIDE: Allow scrolling specifically for Glyph view */
 #view-glyph {
     overflow-y: auto !important; 
 }
 
-/* SCROLLBAR RETRO */
 #view-glyph::-webkit-scrollbar {
     width: 16px;
     background: #000;
@@ -505,7 +475,6 @@ select#sort-select { display: none; }
     width: 100%; height: 100%; background: var(--theme-color); border: 1px solid #333;
 }
 
-/* TOOLTIP */
 .tooltip {
     position: fixed; background: black; color: var(--theme-color);
     border: 1px solid var(--theme-color); padding: 8px 12px;
@@ -514,7 +483,6 @@ select#sort-select { display: none; }
     opacity: 0; transition: opacity 0.1s ease-out; z-index: 9999;
 }
 
-/* --- SVG GRAPH STYLES --- */
 .map-svg, .timeline-svg, .heatmap-svg, .bar-svg, .scatter-svg, .polar-svg {
     width: 100%;
     height: 100%;
@@ -539,7 +507,6 @@ select#sort-select { display: none; }
 }
 .map-controls button:hover { background: var(--theme-color); color: black; }
 
-/* Timeline Elements */
 .timeline-path {
     fill: none; stroke: var(--theme-color); stroke-width: 2px;
     filter: drop-shadow(0 0 4px var(--theme-color)); stroke-linejoin: round; stroke-linecap: round; transition: d 0.5s ease;
@@ -556,7 +523,6 @@ select#sort-select { display: none; }
 }
 .grid-line { stroke: #333; stroke-dasharray: 4; }
 
-/* FOOTER */
 .footer {
     display: flex; justify-content: space-between; align-items: center; padding: 0 20px;
     background: black; border-top: 2px solid var(--theme-color); color: var(--theme-color);
@@ -573,12 +539,10 @@ select#sort-select { display: none; }
     .layout { height: auto; min-height: calc(100vh - 150px); }
 }
 
-/* HEATMAP SPECIFIC */
 #view-heatmap {
     position: relative;
 }
 
-/* BAR CHART SPECIFIC */
 .bar-rect {
     cursor: pointer;
     transition: opacity 0.2s;
@@ -588,7 +552,6 @@ select#sort-select { display: none; }
     opacity: 1;
 }
 
-/* SCATTER SPECIFIC */
 .scatter-dot {
     cursor: pointer;
     transition: r 0.2s, opacity 0.2s;
@@ -599,14 +562,13 @@ select#sort-select { display: none; }
     stroke-width: 2px;
 }
 
-/* POLAR SPECIFIC */
 .polar-path {
     cursor: pointer;
     transition: opacity 0.2s, transform 0.2s;
 }
 .polar-path:hover {
     opacity: 1;
-    fill: #fff !important; /* Flash white like bar chart */
+    fill: #fff !important;
 }
 .polar-grid-circle {
     fill: none;

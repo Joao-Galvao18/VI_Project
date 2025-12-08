@@ -3,13 +3,12 @@ import { state, applyFilters } from './store.js';
 export function initUI() {
     initFilters();
     initSliders();
-    initDurationButtons(); // <--- ADDED BACK
+    initDurationButtons();
     initCustomDropdown();
     setupSortingListener();
     initClock();
 }
 
-// 1. Sidebar Filters (Countries & Shapes)
 function initFilters() {
     const countryList = ["us", "gb", "ca", "au"]; 
     const shapeList = [
@@ -44,22 +43,17 @@ function initFilters() {
     });
 }
 
-// 2. Top Bar Filters (Glyph Grid Duration Buttons)
 function initDurationButtons() {
-    // We strictly target #glyph-controls to avoid breaking the other charts
-    d3.selectAll("#glyph-controls .filter-btn").on("click", function() {
-        
-        // Visual Update: Only remove 'active' from THIS group of buttons
-        d3.selectAll("#glyph-controls .filter-btn").classed("active", false);
-        d3.select(this).classed("active", true);
 
-        // Data Update
-        state.filters.durationCat = d3.select(this).attr("data-val");
-        applyFilters();
+    d3.selectAll("#glyph-controls .filter-btn").on("click", function() {
+    d3.selectAll("#glyph-controls .filter-btn").classed("active", false);
+    d3.select(this).classed("active", true);
+
+    state.filters.durationCat = d3.select(this).attr("data-val");
+    applyFilters();
     });
 }
 
-// 3. Sidebar Sliders
 function initSliders() {
     const yearMinSlider = document.getElementById("year-min");
     const yearMaxSlider = document.getElementById("year-max");
@@ -100,7 +94,6 @@ function initSliders() {
     durMaxSlider.oninput = updateDur;
 }
 
-// 4. Sort Dropdown
 function setupSortingListener() {
     const select = document.getElementById("sort-select");
     if (!select) return;
@@ -155,7 +148,6 @@ function initCustomDropdown() {
     });
 }
 
-// 5. Tooltip Helpers
 export function showTooltip(event, d) {
     const t = d3.select("#tooltip");
     const safe = (v, fallback = "Unknown") => (v === undefined || v === null || v === "" ? fallback : v);

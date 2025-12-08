@@ -3,9 +3,8 @@ import { showTooltip, hideTooltip } from './ui.js';
 
 let polarInitialized = false;
 let svg, g, angleScale, radiusScale;
-let currentMode = "shape"; // "shape" or "country" or "duration"
+let currentMode = "shape";
 
-// Allowed Shapes
 const mainShapes = new Set([
     "circle", "disk", "light", "fireball", 
     "oval", "triangle", "formation", "cylinder", "unknown"
@@ -30,11 +29,9 @@ export function initPolar() {
     g = svg.append("g")
         .attr("transform", `translate(${width / 2},${height / 2})`);
 
-    // Scales
     angleScale = d3.scaleBand().range([0, 2 * Math.PI]).align(0);
     radiusScale = d3.scaleLinear().range([50, radius]);
 
-    // Controls
     d3.select("#polar-btn-shape").on("click", function() { setMode(this, "shape"); });
     d3.select("#polar-btn-country").on("click", function() { setMode(this, "country"); });
     d3.select("#polar-btn-dur").on("click", function() { setMode(this, "duration"); });
@@ -56,7 +53,6 @@ export function updatePolar() {
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
-    // 1. Aggregate Data
     const counts = new Map();
     state.filtered.forEach(d => {
         let key = "unknown";
@@ -73,16 +69,13 @@ export function updatePolar() {
         counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    // Sort Data
     let data = Array.from(counts, ([key, value]) => ({ key, value }));
     data.sort((a, b) => b.value - a.value);
 
-    // 2. Update Domains
     angleScale.domain(data.map(d => d.key));
     const maxVal = d3.max(data, d => d.value) || 10;
     radiusScale.domain([0, maxVal]);
 
-    // 3. Define Arc
     const arc = d3.arc()
         .innerRadius(50)
         .outerRadius(d => radiusScale(d.value))
@@ -91,7 +84,6 @@ export function updatePolar() {
         .padAngle(0.05)
         .padRadius(50);
 
-    // 4. Draw Radial Bars
     const bars = g.selectAll(".polar-path").data(data, d => d.key);
 
     bars.exit().transition().duration(300).style("opacity", 0).remove();
@@ -109,10 +101,9 @@ export function updatePolar() {
             if (currentMode === "country") {
                 return countryColors[d.key] || "#f8c200";
             }
-            return "#f8c200"; // Yellow for shape & duration
+            return "#f8c200";
         });
 
-    // 5. Draw Numbers INSIDE
     g.selectAll(".polar-value").remove();
     g.selectAll(".polar-value").data(data).enter()
         .append("text")
@@ -131,7 +122,6 @@ export function updatePolar() {
         .style("font-weight", "bold")
         .style("pointer-events", "none"); 
 
-    // 6. Draw Labels
     g.selectAll(".polar-label").remove();
     g.selectAll(".polar-label").data(data).enter()
         .append("text")

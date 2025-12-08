@@ -128,35 +128,16 @@ export function updateGrid() {
         .on("mousemove", (event, d) => showTooltip(event, d.data)).on("mouseleave", hideTooltip);
 }
 
-// ----------------------------------------------------
-// PIXEL ICON ENGINE (24x24)
-// ----------------------------------------------------
 const pixelPaths = {
-    // Disk: Classic Saucer
-    disk: "M4,14 h16 v2 h-16 z M6,12 h12 v2 h-12 z M8,10 h8 v2 h-8 z",
-    
-    // Triangle: Black Triangle
-    triangle: "M11,4 h2 v2 h-2 z M10,6 h4 v2 h-4 z M9,8 h6 v2 h-6 z M8,10 h8 v2 h-8 z M7,12 h10 v2 h-10 z M6,14 h12 v2 h-12 z",
-    
-    // Circle: Ball
-    circle: "M9,4 h6 v2 h-6 z M7,6 h2 v2 h-2 z M15,6 h2 v2 h-2 z M6,8 h1 v8 h-1 z M17,8 h1 v8 h-1 z M7,16 h2 v2 h-2 z M15,16 h2 v2 h-2 z M9,18 h6 v2 h-6 z",
-    
-    // OVAL (Replaces Sphere): Elongated Circle
-    oval: "M6,8 h12 v2 h-12 z M4,10 h16 v4 h-16 z M6,14 h12 v2 h-12 z",
 
-    // Cylinder: Cigar Shape
+    disk: "M4,14 h16 v2 h-16 z M6,12 h12 v2 h-12 z M8,10 h8 v2 h-8 z",
+    triangle: "M11,4 h2 v2 h-2 z M10,6 h4 v2 h-4 z M9,8 h6 v2 h-6 z M8,10 h8 v2 h-8 z M7,12 h10 v2 h-10 z M6,14 h12 v2 h-12 z",
+    circle: "M9,4 h6 v2 h-6 z M7,6 h2 v2 h-2 z M15,6 h2 v2 h-2 z M6,8 h1 v8 h-1 z M17,8 h1 v8 h-1 z M7,16 h2 v2 h-2 z M15,16 h2 v2 h-2 z M9,18 h6 v2 h-6 z",
+    oval: "M6,8 h12 v2 h-12 z M4,10 h16 v4 h-16 z M6,14 h12 v2 h-12 z",
     cylinder: "M10,4 h4 v16 h-4 z M10,4 h4 v2 h-4 z M10,18 h4 v2 h-4 z",
-    
-    // Light: Starburst
     light: "M11,2 h2 v6 h-2 z M11,16 h2 v6 h-2 z M2,11 h6 v2 h-6 z M16,11 h6 v2 h-6 z M11,11 h2 v2 h-2 z",
-    
-    // Fireball: Comet
     fireball: "M10,8 h6 v6 h-6 z M8,6 h2 v2 h-2 z M14,6 h2 v2 h-2 z M16,8 h2 v2 h-2 z M16,12 h2 v2 h-2 z M14,14 h2 v2 h-2 z M8,14 h2 v2 h-2 z M6,12 h2 v2 h-2 z M6,8 h2 v2 h-2 z",
-    
-    // Formation: V-Shape
     formation: "M4,6 h4 v4 h-4 z M16,6 h4 v4 h-4 z M10,14 h4 v4 h-4 z",
-    
-    // Unknown: Question Mark "?"
     unknown: "M9,6 h6 v2 h-6 z M13,8 h2 v2 h-2 z M13,10 h2 v2 h-2 z M11,12 h4 v2 h-4 z M11,16 h2 v2 h-2 z"
 };
 

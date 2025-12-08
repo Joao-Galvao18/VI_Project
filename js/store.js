@@ -1,10 +1,9 @@
-// Global Configuration
 export const countryColors = {
-    us: "#f8c200", // USA
-    gb: "#00eaff", // Great Britain
-    au: "#ff00ff", // Australia
-    ca: "#00ff7f", // Canada
-    unknown: "#333333" 
+    us: "#0909adff",
+    gb: "#840492ff",
+    au: "#00843D",
+    ca: "#FF0000",
+    unknown: "#f8c200" 
 };
 
 export const cellSizeMap = {
@@ -14,7 +13,6 @@ export const cellSizeMap = {
     unknown:{ cols: 1, rows: 1 }
 };
 
-// State Container
 export const state = {
     rawData: [],
     filtered: [],
@@ -39,33 +37,27 @@ export function loadData() {
         let validEntries = [];
         const parseDateTime = d3.timeParse("%m/%d/%Y %H:%M");
         const parsePosted = d3.timeParse("%m/%d/%Y");
-        
-        // Allowed Countries
         const allowedCountries = new Set(["us", "gb", "au", "ca"]);
 
-        // Allowed Shapes (OVAL is key here)
         const allowedShapes = new Set([
             "circle", "disk", "light", "fireball", 
             "oval", "triangle", "formation", "cylinder", "unknown"
         ]);
         
         data.forEach(row => {
-            // Normalize Keys
+
             let d = {};
             Object.keys(row).forEach(k => {
                 const cleanKey = k.toLowerCase().replace(/[^a-z0-9]/g, "");
                 d[cleanKey] = row[k];
             });
 
-            // Check Country
             const rawCountry = (d.country || "").toLowerCase().replace(/[^a-z]/g, "");
             if (!allowedCountries.has(rawCountry)) return;
 
-            // Check Shape
             let rawShape = (d.shape || "unknown").trim().toLowerCase();
             if (rawShape === "") rawShape = "unknown";
             
-            // Map "sphere" to "oval" if found, just in case
             if (rawShape === "sphere") rawShape = "oval"; 
 
             if (!allowedShapes.has(rawShape)) return;
@@ -108,14 +100,12 @@ export function loadData() {
             }
         });
 
-        // --- CYLINDER BOOSTING LOGIC ---
         const cylinders = validEntries.filter(d => d.shape === "cylinder");
         const others = validEntries.filter(d => d.shape !== "cylinder");
 
         shuffleArray(cylinders);
         shuffleArray(others);
 
-        // Force 50 cylinders
         const forcedCylinders = cylinders.slice(0, 50); 
         const remainingSlots = 1000 - forcedCylinders.length;
         const randomOthers = others.slice(0, remainingSlots);

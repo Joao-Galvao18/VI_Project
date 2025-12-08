@@ -23,16 +23,12 @@ export function initScatter() {
     g = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Setup Scales
     xScale = d3.scaleTime().range([0, width - margin.left - margin.right]);
-    // Always Log Scale now
     yScale = d3.scaleLog().range([height, 0]);
 
-    // Axes Groups
     xAxisG = g.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
     yAxisG = g.append("g").attr("class", "y-axis");
 
-    // Add Axis Labels
     svg.append("text")
         .attr("x", width - margin.right)
         .attr("y", height + margin.top + 30)
@@ -60,37 +56,28 @@ export function updateScatter() {
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
-    // CRITICAL: Log scales crash on 0. We must filter out 0 durations.
     const data = state.filtered.filter(d => d.datetimeParsed && d.durationSeconds > 0);
 
-    // 1. Set Domains
     const timeExtent = d3.extent(data, d => d.datetimeParsed);
     if (timeExtent[0]) {
         xScale.domain([new Date(timeExtent[0].getTime() - 86400000 * 30), new Date(timeExtent[1].getTime() + 86400000 * 30)]);
     }
 
-    // Y Scale Logic (Logarithmic)
     const height = (svg.node().getBoundingClientRect().height || 600) - margin.top - margin.bottom;
     yScale.range([height, 0]);
     
-    // Domain: 0.1 minutes to Max (clamped to prevent log(0) errors)
-    // This ensures very short sightings (seconds) still appear near the bottom
     const maxDur = d3.max(data, d => d.durationSeconds / 60) || 120;
     yScale.domain([0.1, maxDur]); 
 
-    // 2. Draw Axes
     const xAxis = d3.axisBottom(xScale).ticks(5);
-    // ".1f" format makes log ticks readable (0.1, 1.0, 10.0)
     const yAxis = d3.axisLeft(yScale).ticks(5, ".1f"); 
 
     xAxisG.transition().duration(500).call(xAxis);
     yAxisG.transition().duration(500).call(yAxis);
 
-    // Style Axes
     d3.selectAll(".scatter-svg text").attr("fill", "#f8c200").attr("font-family", "VT323").style("font-size", "14px");
     d3.selectAll(".scatter-svg line, .scatter-svg path").attr("stroke", "#f8c200");
 
-    // 3. Draw Dots
     const dots = g.selectAll(".scatter-dot").data(data, d => d.id);
 
     dots.exit()
@@ -111,7 +98,6 @@ export function updateScatter() {
         .attr("cx", d => xScale(d.datetimeParsed))
         .attr("cy", d => {
             const min = d.durationSeconds / 60;
-            // Protect against values < 0.1 min (6 seconds) going off chart
             return yScale(min < 0.1 ? 0.1 : min);
         })
         .attr("r", 4)
