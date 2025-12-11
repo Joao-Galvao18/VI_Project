@@ -6,6 +6,7 @@ let svg, g, xScale, yScale, xAxisG, yAxisG;
 let currentMode = "shape";
 const margin = { top: 20, right: 20, bottom: 60, left: 60 };
 
+// MAPEAMENTO PARA LABELS LEGÍVEIS
 const countryNames = {
     us: "UNITED STATES",
     gb: "GREAT BRITAIN",
@@ -15,6 +16,7 @@ const countryNames = {
     unknown: "UNKNOWN LOCATION"
 };
 
+// INICIALIZAÇÃO DO GRÁFICO DE BARRAS
 export function initBar() {
     barInitialized = false;
     d3.select("#view-bar svg").remove();
@@ -24,6 +26,7 @@ export function initBar() {
     const width = rect.width || 800;
     const height = (rect.height || 600) - margin.top - margin.bottom;
 
+    // CONFIGURAÇÃO DO SVG E GRUPOS
     svg = container.append("svg")
         .attr("class", "bar-svg")
         .attr("width", "100%")
@@ -33,12 +36,14 @@ export function initBar() {
     g = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    // INICIALIZAÇÃO DE ESCALAS E EIXOS
     xScale = d3.scaleBand().range([0, width - margin.left - margin.right]).padding(0.2);
     yScale = d3.scaleLinear().range([height, 0]);
 
     xAxisG = g.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
     yAxisG = g.append("g").attr("class", "y-axis");
 
+    // LISTENERS DOS BOTÕES DE MODO
     d3.select("#bar-btn-shape").on("click", function() { setMode(this, "shape"); });
     d3.select("#bar-btn-country").on("click", function() { setMode(this, "country"); });
     d3.select("#bar-btn-dur").on("click", function() { setMode(this, "duration"); });
@@ -47,6 +52,7 @@ export function initBar() {
     updateBar();
 }
 
+// ALTERNÂNCIA DE MODO DE VISUALIZAÇÃO
 function setMode(btn, mode) {
     currentMode = mode;
     d3.selectAll("#bar-controls .filter-btn").classed("active", false);
@@ -54,12 +60,14 @@ function setMode(btn, mode) {
     updateBar();
 }
 
+// LÓGICA PRINCIPAL DE RENDERIZAÇÃO
 export function updateBar() {
     if (!barInitialized) return;
     
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
+    // AGREGAÇÃO DE DADOS (CONTAGEM POR CATEGORIA)
     const counts = new Map();
     state.filtered.forEach(d => {
         let key = "unknown";
@@ -72,12 +80,14 @@ export function updateBar() {
         counts.set(key, (counts.get(key) || 0) + 1);
     });
 
+    // PREPARAÇÃO E ORDENAÇÃO DOS DADOS
     let data = Array.from(counts, ([key, value]) => ({ key, value }));
     data.sort((a, b) => b.value - a.value);
 
     xScale.domain(data.map(d => d.key));
     yScale.domain([0, d3.max(data, d => d.value) || 10]);
 
+    // ATUALIZAÇÃO DOS EIXOS E ESTILOS
     const xAxis = d3.axisBottom(xScale);
     const yAxis = d3.axisLeft(yScale).ticks(5);
 
@@ -87,6 +97,7 @@ export function updateBar() {
     d3.selectAll(".bar-svg text").attr("fill", "#f8c200").attr("font-family", "VT323").style("font-size", "16px");
     d3.selectAll(".bar-svg line, .bar-svg path").attr("stroke", "#f8c200");
 
+    // ROTAÇÃO DE TEXTO PARA MODOS COM MUITAS CATEGORIAS
     if (currentMode === "shape") {
         xAxisG.selectAll("text")
             .attr("transform", "rotate(-45)")
@@ -97,6 +108,7 @@ export function updateBar() {
         xAxisG.selectAll("text").attr("transform", null).style("text-anchor", "middle").attr("dx", "0").attr("dy", "1em");
     }
 
+    // DESENHO DAS BARRAS
     const bars = g.selectAll(".bar-rect").data(data, d => d.key);
 
     bars.exit()
@@ -128,6 +140,7 @@ export function updateBar() {
         });
 }
 
+// TOOLTIP ESPECÍFICO PARA O GRÁFICO DE BARRAS
 function showBarTooltip(event, d) {
     const t = d3.select("#tooltip");
     

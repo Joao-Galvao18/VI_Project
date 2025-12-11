@@ -10,6 +10,7 @@ const mainShapes = new Set([
     "oval", "triangle", "formation", "cylinder", "unknown"
 ]);
 
+// INICIALIZAÇÃO DO GRÁFICO RADIAL
 export function initPolar() {
     polarInitialized = false;
     d3.select("#view-polar svg").remove();
@@ -26,12 +27,15 @@ export function initPolar() {
         .attr("height", "100%")
         .attr("viewBox", `0 0 ${rect.width} ${rect.height}`);
 
+    // GRUPO CENTRALIZADO
     g = svg.append("g")
         .attr("transform", `translate(${width / 2},${height / 2})`);
 
+    // DEFINIÇÃO DAS ESCALAS
     angleScale = d3.scaleBand().range([0, 2 * Math.PI]).align(0);
     radiusScale = d3.scaleLinear().range([50, radius]);
 
+    // LISTENERS DOS BOTÕES DE MODO
     d3.select("#polar-btn-shape").on("click", function() { setMode(this, "shape"); });
     d3.select("#polar-btn-country").on("click", function() { setMode(this, "country"); });
     d3.select("#polar-btn-dur").on("click", function() { setMode(this, "duration"); });
@@ -40,6 +44,7 @@ export function initPolar() {
     updatePolar();
 }
 
+// ALTERNA O MODO DE VISUALIZAÇÃO
 function setMode(btn, mode) {
     currentMode = mode;
     d3.selectAll("#polar-controls .filter-btn").classed("active", false);
@@ -47,12 +52,15 @@ function setMode(btn, mode) {
     updatePolar();
 }
 
+// LÓGICA PRINCIPAL DE RENDERIZAÇÃO
 export function updatePolar() {
     if (!polarInitialized) return;
 
+    // ATUALIZA ESTATÍSTICAS NA UI
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
+    // AGREGAÇÃO DE DADOS
     const counts = new Map();
     state.filtered.forEach(d => {
         let key = "unknown";
@@ -76,6 +84,7 @@ export function updatePolar() {
     const maxVal = d3.max(data, d => d.value) || 10;
     radiusScale.domain([0, maxVal]);
 
+    // GERADOR DE ARCOS (D3.ARC)
     const arc = d3.arc()
         .innerRadius(50)
         .outerRadius(d => radiusScale(d.value))
@@ -84,6 +93,7 @@ export function updatePolar() {
         .padAngle(0.05)
         .padRadius(50);
 
+    // DESENHO DAS BARRAS RADIAIS
     const bars = g.selectAll(".polar-path").data(data, d => d.key);
 
     bars.exit().transition().duration(300).style("opacity", 0).remove();
@@ -104,6 +114,7 @@ export function updatePolar() {
             return "#f8c200";
         });
 
+    // RÓTULOS DE VALOR
     g.selectAll(".polar-value").remove();
     g.selectAll(".polar-value").data(data).enter()
         .append("text")
@@ -122,6 +133,7 @@ export function updatePolar() {
         .style("font-weight", "bold")
         .style("pointer-events", "none"); 
 
+    // RÓTULOS DE CATEGORIA
     g.selectAll(".polar-label").remove();
     g.selectAll(".polar-label").data(data).enter()
         .append("text")
@@ -129,6 +141,7 @@ export function updatePolar() {
         .attr("text-anchor", "middle")
         .attr("alignment-baseline", "middle")
         .attr("transform", d => {
+            // CÁLCULO DE ROTAÇÃO E POSIÇÃO PARA LEGIBILIDADE
             const angle = angleScale(d.key) + angleScale.bandwidth() / 2 - Math.PI / 2;
             const r = radiusScale(d.value) + 20; 
             const degrees = angle * 180 / Math.PI;
@@ -140,6 +153,7 @@ export function updatePolar() {
         .style("font-size", "12px");
 }
 
+// TOOLTIP ESPECÍFICO PARA O GRÁFICO POLAR
 function showPolarBarTooltip(event, d) {
     const t = d3.select("#tooltip");
     

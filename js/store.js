@@ -6,6 +6,7 @@ export const countryColors = {
     unknown: "#f8c200" 
 };
 
+// CONFIGURAÇÃO DO TAMANHO DAS CÉLULAS DO GLYPH
 export const cellSizeMap = {
     short:  { cols: 1, rows: 1 },
     medium: { cols: 2, rows: 2 },
@@ -13,6 +14,7 @@ export const cellSizeMap = {
     unknown:{ cols: 1, rows: 1 }
 };
 
+// ESTADO GLOBAL DA APLICAÇÃO
 export const state = {
     rawData: [],
     filtered: [],
@@ -31,6 +33,7 @@ export const state = {
 let onUpdate = () => {};
 export function setUpdateCallback(fn) { onUpdate = fn; }
 
+// CARREGAMENTO E PROCESSAMENTO DE DADOS
 export function loadData() {
     return d3.csv("data/ufo_full.csv").then(data => {
         
@@ -44,6 +47,7 @@ export function loadData() {
             "oval", "triangle", "formation", "cylinder", "unknown"
         ]);
         
+        // LOOP DE LIMPEZA E NORMALIZAÇÃO DOS DADOS
         data.forEach(row => {
 
             let d = {};
@@ -52,9 +56,11 @@ export function loadData() {
                 d[cleanKey] = row[k];
             });
 
+            // VALIDAÇÃO DE PAÍS
             const rawCountry = (d.country || "").toLowerCase().replace(/[^a-z]/g, "");
             if (!allowedCountries.has(rawCountry)) return;
 
+            // VALIDAÇÃO E CORREÇÃO DE FORMAS
             let rawShape = (d.shape || "unknown").trim().toLowerCase();
             if (rawShape === "") rawShape = "unknown";
             
@@ -62,7 +68,6 @@ export function loadData() {
 
             if (!allowedShapes.has(rawShape)) return;
 
-            // Parse Dates
             const rawTime = d.datetime || "";
             const rawPosted = d.dateposted || "";
             
@@ -77,6 +82,7 @@ export function loadData() {
             if (dateParsed) {
                 const duration = parseFloat(d.durationseconds) || 0;
                 
+                // CATEGORIZAÇÃO DA DURAÇÃO (SHORT/MEDIUM/LONG)
                 let cat = "unknown";
                 if (duration < 300) cat = "short";
                 else if (duration <= 1800) cat = "medium";
@@ -100,6 +106,7 @@ export function loadData() {
             }
         });
 
+        // LÓGICA DE AMOSTRAGEM: GARANTIR CILINDROS + ALEATÓRIOS
         const cylinders = validEntries.filter(d => d.shape === "cylinder");
         const others = validEntries.filter(d => d.shape !== "cylinder");
 
@@ -113,6 +120,7 @@ export function loadData() {
         const finalSet = [...forcedCylinders, ...randomOthers];
         shuffleArray(finalSet);
 
+        // ATUALIZA O ESTADO COM DADOS FINAIS
         state.rawData = finalSet;
         state.rawData.sort((a, b) => b.datetimeParsed - a.datetimeParsed);
 
@@ -121,6 +129,7 @@ export function loadData() {
     });
 }
 
+// UTILITÁRIO PARA EMBARALHAR ARRAYS
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -128,6 +137,7 @@ function shuffleArray(array) {
     }
 }
 
+// APLICAÇÃO DOS FILTROS (PAÍS, FORMA, ANO, DURAÇÃO)
 export function applyFilters() {
     const f = state.filters;
     state.filtered = state.rawData.filter(d => {
@@ -150,9 +160,10 @@ export function applyFilters() {
     });
 
     applySorting();
-    onUpdate(); 
+    onUpdate();
 }
 
+// LÓGICA DE ORDENAÇÃO DOS DADOS
 function applySorting() {
     const mode = state.filters.sortMode;
     state.filtered.sort((a, b) => {

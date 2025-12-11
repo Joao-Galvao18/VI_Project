@@ -5,6 +5,7 @@ let scatterInitialized = false;
 let svg, g, xScale, yScale, xAxisG, yAxisG;
 const margin = { top: 20, right: 30, bottom: 40, left: 50 };
 
+// INICIALIZAÇÃO DO SCATTER
 export function initScatter() {
     scatterInitialized = false;
     d3.select("#view-scatter svg").remove();
@@ -23,12 +24,16 @@ export function initScatter() {
     g = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    // ESCALA DE TEMPO (X)
     xScale = d3.scaleTime().range([0, width - margin.left - margin.right]);
+    
+    // ESCALA LOGARÍTMICA (Y) PARA MELHOR VISUALIZAR DURAÇÕES MUITO DÍSPARES
     yScale = d3.scaleLog().range([height, 0]);
 
     xAxisG = g.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
     yAxisG = g.append("g").attr("class", "y-axis");
 
+    // ETIQUETA DO EIXO X
     svg.append("text")
         .attr("x", width - margin.right)
         .attr("y", height + margin.top + 30)
@@ -37,6 +42,7 @@ export function initScatter() {
         .attr("font-family", "VT323")
         .text("SIGHTING DATE");
 
+    // ETIQUETA DO EIXO Y
     svg.append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", 15)
@@ -50,14 +56,18 @@ export function initScatter() {
     updateScatter();
 }
 
+// ATUALIZAÇÃO DOS DADOS NO GRÁFICO
 export function updateScatter() {
     if (!scatterInitialized) return;
 
+    // ATUALIZA CONTADORES
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
+    // FILTRA APENAS DADOS COM DATA E DURAÇÃO VÁLIDAS
     const data = state.filtered.filter(d => d.datetimeParsed && d.durationSeconds > 0);
 
+    // DEFINE O DOMÍNIO DO EIXO X (DATAS) COM MARGEM DE 30 DIAS
     const timeExtent = d3.extent(data, d => d.datetimeParsed);
     if (timeExtent[0]) {
         xScale.domain([new Date(timeExtent[0].getTime() - 86400000 * 30), new Date(timeExtent[1].getTime() + 86400000 * 30)]);
@@ -66,18 +76,23 @@ export function updateScatter() {
     const height = (svg.node().getBoundingClientRect().height || 600) - margin.top - margin.bottom;
     yScale.range([height, 0]);
     
+    // DEFINE O DOMÍNIO DO EIXO Y (DURAÇÃO EM MINUTOS)
+    // USAMOS 0.1 COMO MÍNIMO PARA EVITAR ERROS NO LOG(0)
     const maxDur = d3.max(data, d => d.durationSeconds / 60) || 120;
     yScale.domain([0.1, maxDur]); 
 
+    // ATUALIZAÇÃO DOS EIXOS
     const xAxis = d3.axisBottom(xScale).ticks(5);
     const yAxis = d3.axisLeft(yScale).ticks(5, ".1f"); 
 
     xAxisG.transition().duration(500).call(xAxis);
     yAxisG.transition().duration(500).call(yAxis);
 
+    // ESTILIZAÇÃO DOS EIXOS
     d3.selectAll(".scatter-svg text").attr("fill", "#f8c200").attr("font-family", "VT323").style("font-size", "14px");
     d3.selectAll(".scatter-svg line, .scatter-svg path").attr("stroke", "#f8c200");
 
+    // DESENHO DOS PONTOS
     const dots = g.selectAll(".scatter-dot").data(data, d => d.id);
 
     dots.exit()
@@ -106,6 +121,7 @@ export function updateScatter() {
         .attr("stroke", "none");
 }
 
+// TOOLTIP ESPECÍFICO PARA O SCATTER
 function showScatterTooltip(event, d) {
     const t = d3.select("#tooltip");
     const mins = (d.durationSeconds / 60).toFixed(1);

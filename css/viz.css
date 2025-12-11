@@ -1,0 +1,117 @@
+/* Gliph grid specific */
+.matrix {
+    padding: 20px;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.matrix h2 { margin-top: 0; margin-bottom: 15px; }
+.matrix-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; min-height: 40px;
+}
+
+#view-glyph, #view-map, #view-timeline, #view-heatmap, #view-bar, #view-scatter, #view-polar {
+    flex-grow: 1;
+    border: 2px solid var(--theme-color);
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    margin-bottom: 5px;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+#view-glyph { overflow-y: auto !important; }
+#view-glyph::-webkit-scrollbar {
+    width: 16px; background: #000; border-left: 1px solid var(--theme-color);
+}
+#view-glyph::-webkit-scrollbar-track {
+    background: #111; border-left: 1px solid var(--theme-color);
+}
+#view-glyph::-webkit-scrollbar-thumb {
+    background-color: var(--theme-color); border: 3px solid #000;
+}
+#view-glyph::-webkit-scrollbar-thumb:hover { background-color: #ffe066; }
+
+#glyph-grid {
+    display: grid;
+    grid-auto-rows: var(--cell-size); 
+    gap: var(--gap-size);
+    margin: 0 auto;
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.glyph {
+    width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; cursor: pointer;
+    border: 1px solid #333; box-shadow: 0 0 0 1px #111 inset; background: rgba(0, 0, 0, 0.3);
+}
+
+.filler { width: 100%; height: 100%; background: var(--theme-color); border: 1px solid #333; }
+
+.map-svg, .timeline-svg, .heatmap-svg, .bar-svg, .scatter-svg, .polar-svg {
+    width: 100%; height: 100%; display: block;
+}
+
+/* Map specific */
+.country {
+    fill: rgba(248, 194, 0, 0.05); stroke: var(--theme-color); stroke-width: 0.5px; vector-effect: non-scaling-stroke;
+}
+.graticule { fill: none; stroke: var(--theme-color); stroke-width: 0.2px; stroke-opacity: 0.2; }
+.map-marker {
+    fill: var(--theme-color); stroke: none; opacity: 0.8; cursor: pointer; transition: r 0.2s;
+}
+.map-marker:hover { fill: #fff; opacity: 1; }
+
+.map-controls { display: flex; gap: 5px; }
+.map-controls button {
+    background: black; color: var(--theme-color); border: 1px solid var(--theme-color);
+    width: 30px; height: 30px; font-family: "VT323", monospace; font-size: 20px; cursor: pointer;
+}
+.map-controls button:hover { background: var(--theme-color); color: black; }
+
+/* Timeline specific */
+.timeline-path {
+    fill: none; stroke: var(--theme-color); stroke-width: 2px;
+    filter: drop-shadow(0 0 4px var(--theme-color)); stroke-linejoin: round; stroke-linecap: round; transition: d 0.5s ease;
+}
+.timeline-dot {
+    fill: black; stroke: var(--theme-color); stroke-width: 2px; cursor: pointer; transition: all 0.2s;
+}
+.timeline-dot:hover { fill: var(--theme-color); r: 6; }
+
+/* Axes */
+.x-axis text, .y-axis text {
+    fill: var(--theme-color); font-family: "VT323", monospace; font-size: 14px;
+}
+.x-axis path, .x-axis line, .y-axis path, .y-axis line { stroke: var(--theme-color); }
+.grid-line { stroke: #333; stroke-dasharray: 4; }
+
+/* Heatmap specific */
+#view-heatmap { position: relative; }
+
+/* Bar Chart specific */
+.bar-rect { cursor: pointer; transition: opacity 0.2s; }
+.bar-rect:hover { fill: #fff !important; opacity: 1; }
+
+/* Scatter specific */
+.scatter-dot { cursor: pointer; transition: r 0.2s, opacity 0.2s; }
+.scatter-dot:hover { opacity: 1; stroke: #fff; stroke-width: 2px; }
+
+/* Polar/Radial specific */
+.polar-path { cursor: pointer; transition: opacity 0.2s, transform 0.2s; }
+.polar-path:hover { opacity: 1; fill: #fff !important; }
+.polar-grid-circle { fill: none; stroke: var(--theme-color); stroke-opacity: 0.1; stroke-dasharray: 4; }
+.polar-grid-line { stroke: var(--theme-color); stroke-opacity: 0.1; }
+
+.tooltip {
+    position: fixed; background: black; color: var(--theme-color);
+    border: 1px solid var(--theme-color); padding: 8px 12px;
+    font-family: "VT323", monospace; font-size: 16px; pointer-events: none;
+    white-space: pre-line; width: 260px; max-width: 260px;
+    opacity: 0; transition: opacity 0.1s ease-out; z-index: 9999;
+}

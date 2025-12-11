@@ -6,10 +6,12 @@ let svg, g, xScale, yScale, colorScale;
 let currentMode = "count";
 const margin = { top: 40, right: 20, bottom: 20, left: 60 };
 
+// MAPEAMENTO DE CÓDIGOS DE PAÍS PARA NOMES CURTOS
 const countryLabels = {
     us: "USA", gb: "UK", ca: "CAN", au: "AUS", de: "DEU", unknown: "?"
 };
 
+// INICIALIZAÇÃO DO SVG E ESTRUTURA DO HEATMAP
 export function initHeatmap() {
     heatmapInitialized = false;
     d3.select("#view-heatmap svg").remove();
@@ -20,6 +22,7 @@ export function initHeatmap() {
     const width = rect.width || 800;
     const height = (rect.height || 600) - margin.top - margin.bottom;
 
+    // CRIAÇÃO DO CANVAS
     svg = container.append("svg")
         .attr("class", "heatmap-svg")
         .attr("width", "100%")
@@ -29,11 +32,14 @@ export function initHeatmap() {
     g = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
+    // DEFINIÇÃO DAS ESCALAS
     xScale = d3.scaleBand().range([0, width - margin.left - margin.right]).padding(0.05);
     yScale = d3.scaleBand().range([0, height]).padding(0.05);
     
+    // ESCALA DE COR
     colorScale = d3.scaleSqrt().range(["#331a00", "#ffcc00"]);
 
+    // LISTENERS DOS BOTÕES DE MODO
     d3.select("#hm-btn-count").on("click", function() { setMode(this, "count"); });
     d3.select("#hm-btn-dur").on("click", function() { setMode(this, "duration"); });
     d3.select("#hm-btn-country").on("click", function() { setMode(this, "country"); });
@@ -42,6 +48,7 @@ export function initHeatmap() {
     updateHeatmap();
 }
 
+// ALTERNA O MODO DE VISUALIZAÇÃO
 function setMode(btn, mode) {
     currentMode = mode;
     d3.selectAll("#heatmap-controls .filter-btn").classed("active", false);
@@ -49,23 +56,28 @@ function setMode(btn, mode) {
     updateHeatmap();
 }
 
+// LÓGICA PRINCIPAL DE RENDERIZAÇÃO E PROCESSAMENTO DE DADOS
 export function updateHeatmap() {
     if (!heatmapInitialized) return;
 
+    // ATUALIZA OS CONTADORES NA UI
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
     const data = state.filtered;
     const { yearMin, yearMax } = state.filters;
     
+    // GERA ARRAY DE ANOS NO INTERVALO SELECIONADO
     const years = [];
     for (let y = yearMin; y <= yearMax; y++) years.push(y);
 
     let plotData = [];
 
+    // --- MODO POR PAÍS
     if (currentMode === "country") {
         const countries = ["us", "gb", "ca", "au"];
         
+        // INICIALIZA OS BUCKETS VAZIOS
         const buckets = new Map();
         countries.forEach(c => {
             years.forEach(y => {
@@ -76,6 +88,7 @@ export function updateHeatmap() {
             });
         });
 
+        // PREENCHE OS BUCKETS COM DADOS
         data.forEach(d => {
             if (!d.datetimeParsed) return;
             const y = d.datetimeParsed.getFullYear();
@@ -92,8 +105,10 @@ export function updateHeatmap() {
         yScale.domain(countries);
 
     } else {
+        // --- MODO PADRÃO
         const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
         
+        // INICIALIZA BUCKETS MÊS/ANO
         const buckets = new Map();
         years.forEach(y => {
             months.forEach((m, i) => {
@@ -104,6 +119,7 @@ export function updateHeatmap() {
             });
         });
 
+        // PREENCHE BUCKETS E SOMA DURAÇÕES
         data.forEach(d => {
             if (!d.datetimeParsed) return;
             const y = d.datetimeParsed.getFullYear();
@@ -124,15 +140,18 @@ export function updateHeatmap() {
         xScale.domain(months);
         yScale.domain(years);
         
+        //CALCULA O VALOR MÁXIMO PARA A ESCALA DE COR
         const maxValue = d3.max(plotData, d => {
             return currentMode === "count" ? d.count : (d.count > 0 ? d.totalDur / d.count : 0);
         }) || 1;
         colorScale.domain([0, maxValue]);
     }
 
+    //DESENHO DOS EIXOS
     g.selectAll(".x-axis").remove();
     const xAxis = d3.axisTop(xScale).tickSize(0);
     
+    // REDUZ O NÚMERO DE TICKS SE HOUVER MUITOS ANOS (MODO PAÍS)
     if (currentMode === "country" && years.length > 20) {
         xAxis.tickValues(years.filter(y => y % 5 === 0));
     }
@@ -147,6 +166,7 @@ export function updateHeatmap() {
     g.selectAll(".y-axis").remove();
     const yAxis = d3.axisLeft(yScale).tickSize(0);
     
+    // REDUZ O NÚMERO DE TICKS NO EIXO VERTICAL SE NECESSÁRIO
     if (currentMode !== "country" && years.length > 40) {
         yAxis.tickValues(years.filter(y => y % 5 === 0));
     }
@@ -164,6 +184,7 @@ export function updateHeatmap() {
 
     g.selectAll(".domain").remove();
 
+    //RENDERIZAÇÃO DAS CÉLULAS (RETÂNGULOS)
     const cells = g.selectAll(".cell").data(plotData, d => d.id);
 
     cells.exit().remove();
@@ -186,12 +207,14 @@ export function updateHeatmap() {
         .attr("width", xScale.bandwidth())
         .attr("height", yScale.bandwidth())
         .attr("fill", d => {
+            // LÓGICA DE COR PARA MODO PAÍS
             if (currentMode === "country") {
                 if (d.count === 0) return "rgba(248, 194, 0, 0.08)";
                 const baseColor = countryColors[d.yVal] || "#f8c200";
                 return baseColor;
             }
             
+            // LÓGICA DE COR PARA O HEATMAP
             const val = currentMode === "count" ? d.count : (d.count > 0 ? d.totalDur / d.count : 0);
             return val === 0 ? "rgba(248, 194, 0, 0.08)" : colorScale(val);
         })
@@ -200,6 +223,7 @@ export function updateHeatmap() {
         });
 }
 
+// TOOLTIP ESPECÍFICO PARA O HEATMAP
 function showHeatmapTooltip(event, d) {
     const t = d3.select("#tooltip");
     

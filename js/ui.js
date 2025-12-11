@@ -1,5 +1,6 @@
 import { state, applyFilters } from './store.js';
 
+// INICIALIZAÇÃO PRINCIPAL DA INTERFACE DE UTILIZADOR
 export function initUI() {
     initFilters();
     initSliders();
@@ -9,6 +10,7 @@ export function initUI() {
     initClock();
 }
 
+// INICIALIZAÇÃO DOS FILTROS DE TAGS (PAÍSES E FORMAS)
 function initFilters() {
     const countryList = ["us", "gb", "ca", "au"]; 
     const shapeList = [
@@ -16,54 +18,66 @@ function initFilters() {
         "oval", "triangle", "formation", "cylinder", "unknown"
     ];
 
+    // GERAÇÃO DAS TAGS DE PAÍSES
     const cDiv = d3.select("#filter-countries");
     cDiv.html(""); 
     
     countryList.forEach(c => {
         cDiv.append("div").attr("class", "tag").text(c.toUpperCase())
             .on("click", function () {
+                // LÓGICA DE TOGGLE
                 if (state.filters.countries.has(c)) state.filters.countries.delete(c);
                 else state.filters.countries.add(c);
+                
+                // ATUALIZA CLASSE VISUAL E APLICA FILTROS
                 d3.select(this).classed("active", state.filters.countries.has(c));
                 applyFilters();
             });
     });
 
+    // GERAÇÃO DAS TAGS DE FORMAS
     const sDiv = d3.select("#filter-shapes");
     sDiv.html(""); 
 
     shapeList.forEach(s => {
         sDiv.append("div").attr("class", "tag").text(s.toUpperCase())
             .on("click", function () {
+                // LÓGICA DE TOGGLE
                 if (state.filters.shapes.has(s)) state.filters.shapes.delete(s);
                 else state.filters.shapes.add(s);
+                
+                // ATUALIZA CLASSE VISUAL E APLICA FILTROS
                 d3.select(this).classed("active", state.filters.shapes.has(s));
                 applyFilters();
             });
     });
 }
 
+// INICIALIZAÇÃO DOS BOTÕES DE CATEGORIA DE DURAÇÃO
 function initDurationButtons() {
-
     d3.selectAll("#glyph-controls .filter-btn").on("click", function() {
-    d3.selectAll("#glyph-controls .filter-btn").classed("active", false);
-    d3.select(this).classed("active", true);
+        d3.selectAll("#glyph-controls .filter-btn").classed("active", false);
+        d3.select(this).classed("active", true);
 
-    state.filters.durationCat = d3.select(this).attr("data-val");
-    applyFilters();
+        state.filters.durationCat = d3.select(this).attr("data-val");
+        applyFilters();
     });
 }
 
+// INICIALIZAÇÃO DOS SLIDERS DE RANGE
 function initSliders() {
     const yearMinSlider = document.getElementById("year-min");
     const yearMaxSlider = document.getElementById("year-max");
     const durMinSlider = document.getElementById("duration-min");
     const durMaxSlider = document.getElementById("duration-max");
 
+    // ATUALIZAÇÃO DO FILTRO DE ANO
     function updateYear() {
+        // GARANTE QUE O MÍNIMO NÃO ULTRAPASSA O MÁXIMO
         state.filters.yearMin = Math.min(parseInt(yearMinSlider.value), parseInt(yearMaxSlider.value) - 1);
         state.filters.yearMax = Math.max(parseInt(yearMinSlider.value) + 1, parseInt(yearMaxSlider.value));
         
+        // ATUALIZA OS INPUTS E OS LABELS VISUAIS
         yearMinSlider.value = state.filters.yearMin;
         yearMaxSlider.value = state.filters.yearMax;
         
@@ -74,6 +88,7 @@ function initSliders() {
         applyFilters();
     }
 
+    // ATUALIZAÇÃO DO FILTRO DE DURAÇÃO
     function updateDur() {
         state.filters.durMin = Math.min(parseInt(durMinSlider.value), parseInt(durMaxSlider.value) - 1);
         state.filters.durMax = Math.max(parseInt(durMinSlider.value) + 1, parseInt(durMaxSlider.value));
@@ -88,12 +103,14 @@ function initSliders() {
         applyFilters();
     }
 
+    // LISTENERS DE INPUT
     yearMinSlider.oninput = updateYear;
     yearMaxSlider.oninput = updateYear;
     durMinSlider.oninput = updateDur;
     durMaxSlider.oninput = updateDur;
 }
 
+// CONFIGURAÇÃO DO LISTENER DE ORDENAÇÃO
 function setupSortingListener() {
     const select = document.getElementById("sort-select");
     if (!select) return;
@@ -103,12 +120,15 @@ function setupSortingListener() {
     });
 }
 
+// CRIAÇÃO DO DROPDOWN CUSTOMIZADO
 function initCustomDropdown() {
     const originalSelect = document.getElementById("sort-select");
     if (!originalSelect) return;
 
+    // EVITA DUPLICAÇÃO SE JÁ EXISTIR
     if (originalSelect.parentNode.classList.contains("custom-select-wrapper")) return;
 
+    // CRIA A ESTRUTURA HTML DO DROPDOWN CUSTOMIZADO
     const wrapper = document.createElement("div");
     wrapper.classList.add("custom-select-wrapper");
     originalSelect.parentNode.insertBefore(wrapper, originalSelect);
@@ -123,6 +143,7 @@ function initCustomDropdown() {
     optionsList.classList.add("custom-options");
     wrapper.appendChild(optionsList);
 
+    // COPIA AS OPÇÕES DO SELECT ORIGINAL PARA A LISTA CUSTOMIZADA
     for (const option of originalSelect.options) {
         const customOption = document.createElement("span");
         customOption.classList.add("custom-option");
@@ -130,11 +151,14 @@ function initCustomDropdown() {
         customOption.textContent = option.text;
         if (option.selected) customOption.classList.add("selected");
 
+        // EVENTO DE CLIQUE NA OPÇÃO
         customOption.addEventListener("click", function() {
             trigger.querySelector("span").textContent = this.textContent;
             wrapper.querySelectorAll(".custom-option").forEach(opt => opt.classList.remove("selected"));
             this.classList.add("selected");
             wrapper.classList.remove("open");
+            
+            // ATUALIZA O SELECT ORIGINAL ESCONDIDO E DISPARA O EVENTO CHANGE
             originalSelect.value = this.dataset.value;
             const event = new Event('change');
             originalSelect.dispatchEvent(event);
@@ -143,19 +167,21 @@ function initCustomDropdown() {
     }
 
     trigger.addEventListener("click", () => wrapper.classList.toggle("open"));
+    
     document.addEventListener("click", (e) => {
         if (!wrapper.contains(e.target)) wrapper.classList.remove("open");
     });
 }
 
+// LÓGICA DE EXIBIÇÃO DO TOOLTIP
 export function showTooltip(event, d) {
     const t = d3.select("#tooltip");
     const safe = (v, fallback = "Unknown") => (v === undefined || v === null || v === "" ? fallback : v);
-    
     const html = `Date: ${safe(d.datetime)}\nLocation: ${safe(d.city)}, ${safe(d.state)}, ${safe(d.country, "").toUpperCase()}\nShape: ${safe(d.shape)}\nDuration: ${safe(d.durationSeconds)}s (${safe(d.durationCategory)})\n--------------------------------------------------\n${safe(d.comments, "(No comments)")}`;
     
     t.html(html);
 
+    // CÁLCULO DA POSIÇÃO INTELIGENTE (EVITA SAIR DO ECRÃ)
     const tooltipWidth = 260;
     const tooltipHeight = 200;
     const padding = 20;
@@ -169,10 +195,12 @@ export function showTooltip(event, d) {
     t.style("left", x + "px").style("top", y + "px").style("opacity", 1);
 }
 
+// ESCONDE O TOOLTIP
 export function hideTooltip() { 
     d3.select("#tooltip").style("opacity", 0); 
 }
 
+// RELÓGIO EM TEMPO REAL NO CABEÇALHO
 function initClock() {
     function updateClock() {
         const now = new Date();

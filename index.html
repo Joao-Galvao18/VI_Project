@@ -6,7 +6,10 @@
     <title>UFO Sightings Data Matrix</title>
 
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    
+    <link rel="stylesheet" href="css/core.css">
+    <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/viz.css">
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson@3"></script>
@@ -17,8 +20,8 @@
     <div class="crt-screen">
     <header class="header">
         <div class="date" id="current-date"></div>
-        <h1>UFO SIGHTINGS DATA MATRIX V2.0</h1>
-        <div class="version">SECURE CONNECTION <br> THANKS TO JOAO GALVAO & PEDRO SILVA</div>
+        <h1>UFO SIGHTINGS DATA MATRIX V2.6</h1>
+        <div class="version">SECURE CONNECTION</div>
     </header>
 
     <nav class="modes">
@@ -29,6 +32,8 @@
         <button class="mode">HEATMAP</button>
         <button class="mode">BAR</button>
         <button class="mode">RADIAL</button>
+        
+        <button class="mode" id="btn-about" style="margin-left: auto;">SYSTEM / ABOUT</button>
     </nav>
 
     <main class="layout">
@@ -150,21 +155,45 @@
      </section>
 
     </main>
-
-    <footer class="footer">
-        <div class="footer-section">
-            <span class="indicator blink">●</span> SYSTEM STATUS: ONLINE
-        </div>
-        <div class="footer-section center">
-            DATA SOURCE: UFO CSV DATASET
-        </div>
-        <div class="footer-section right">
-            SECURE CONNECTION THANKS TO JOÃO GALVÃO & PEDRO SILVA
-        </div>
-    </footer>
     
     </div>
     <div class="scanlines"></div>
+    </div>
+
+    <div id="about-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h2>SYSTEM INFORMATION</h2>
+                <button id="btn-close-about">X</button>
+            </div>
+            
+            <div class="modal-content">
+                <h3>VI PROJECT: UFO SIGHTINGS MATRIX</h3>
+                <p>
+                    This terminal provides a visual interface for analyzing unidentified aerial phenomena 
+                    reports gathered between 1945 and 2015. 
+                </p>
+                <p>
+                    Data is visualized using various spectral analysis modes including Glyph Grids, 
+                    Geospatial Tracking, and Temporal Density Scans. The dataset was taken from ufo_full.csv and filtered down to the most common sight place and UFO shapes aswell as the ammount of shown entries
+                </p>
+                <br>
+                <hr style="border: 1px dashed var(--theme-color); opacity: 0.5">
+                <br>
+                
+                <div class="setting-row">
+                    <label for="glitch-toggle">VISUAL FX / GLITCHES:</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="glitch-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <p style="font-size: 14px; margin-top: 20px; opacity: 0.7;">
+                    > MADE BY: JOAO GALVAO 2022214628 & PEDRO SILVA 2022214963
+                </p>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="js/main.js"></script>

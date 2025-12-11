@@ -9,6 +9,7 @@ export function initTimeline() {
     timelineInitialized = false;
     d3.select("#view-timeline svg").remove();
 
+    // CONFIGURAÇÃO DO CONTENTOR E DIMENSÕES
     const container = d3.select("#view-timeline");
     const rect = container.node().getBoundingClientRect();
     const width = rect.width - timeMargin.left - timeMargin.right;
@@ -21,9 +22,11 @@ export function initTimeline() {
     timeG = timeSvg.append("g")
         .attr("transform", `translate(${timeMargin.left},${timeMargin.top})`);
 
+    // DEFINIÇÃO DAS ESCALAS
     xTime = d3.scaleLinear().range([0, width]);
     yTime = d3.scaleLinear().range([height, 0]);
 
+    // PREPARAÇÃO DOS EIXOS E DO CAMINHO DA LINHA
     timeG.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
     timeG.append("g").attr("class", "y-axis");
     timeG.append("path").attr("class", "timeline-path");
@@ -32,16 +35,21 @@ export function initTimeline() {
     updateTimeline();
 }
 
+// ATUALIZAÇÃO DA TIMELINE COM DADOS FILTRADOS
 export function updateTimeline() {
     if (!timelineInitialized) return;
 
+    // ATUALIZA ESTATÍSTICAS NA UI
     d3.select("#showing-count").text(state.filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
+    // AGREGAÇÃO DE DADOS POR ANO
     const counts = new Map();
     const { yearMin, yearMax } = state.filters;
+    // INICIALIZA TODOS OS ANOS COM 0
     for (let y = yearMin; y <= yearMax; y++) counts.set(y, 0);
 
+    // CONTA OCORRÊNCIAS
     state.filtered.forEach(d => {
         if (d.datetimeParsed) {
             const y = d.datetimeParsed.getFullYear();
@@ -49,24 +57,30 @@ export function updateTimeline() {
         }
     });
 
+    // CONVERTE PARA ARRAY E ORDENA POR ANO
     const timelineData = Array.from(counts, ([year, count]) => ({ year, count })).sort((a, b) => a.year - b.year);
 
+    // ATUALIZAÇÃO DOS DOMÍNIOS DAS ESCALAS
     xTime.domain([yearMin, yearMax]);
     yTime.domain([0, d3.max(timelineData, d => d.count) || 10]).nice();
 
+    // ATUALIZAÇÃO DOS EIXOS
     const xAxis = d3.axisBottom(xTime).tickFormat(d3.format("d")).ticks(Math.floor(xTime.range()[0] / 50)); 
     const yAxis = d3.axisLeft(yTime);
 
     timeG.select(".x-axis").transition().call(xAxis);
     timeG.select(".y-axis").transition().call(yAxis);
 
+    // GERAÇÃO DA LINHA
     lineGenerator = d3.line()
         .x(d => xTime(d.year))
         .y(d => yTime(d.count))
         .curve(d3.curveMonotoneX);
 
+    // DESENHO DA LINHA
     timeG.select(".timeline-path").datum(timelineData).transition().duration(500).attr("d", lineGenerator);
 
+    // DESENHO DOS PONTOS INTERATIVOS
     const dots = timeG.selectAll(".timeline-dot").data(timelineData);
     dots.exit().remove();
     dots.enter().append("circle").attr("class", "timeline-dot").attr("r", 4)
@@ -76,6 +90,7 @@ export function updateTimeline() {
         .attr("cx", d => xTime(d.year)).attr("cy", d => yTime(d.count));
 }
 
+// TOOLTIP ESPECÍFICO PARA A TIMELINE
 function showTimelineTooltip(event, d) {
     const t = d3.select("#tooltip");
     t.html(`YEAR: ${d.year}\nSIGHTINGS: ${d.count}`);

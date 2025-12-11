@@ -1,20 +1,24 @@
 import { state, cellSizeMap, countryColors } from './store.js';
 import { showTooltip, hideTooltip } from './ui.js';
 
+// FUNÇÃO PRINCIPAL PARA ATUALIZAR A GRELHA DE GLYPHS
 export function updateGrid() {
     const grid = d3.select("#glyph-grid");
     const container = document.getElementById("view-glyph"); 
     const sortMode = state.filters.sortMode;
     const filtered = state.filtered;
 
+    // ATUALIZA OS CONTADORES NA UI
     d3.select("#showing-count").text(filtered.length);
     d3.select("#total-count").text(state.rawData.length);
 
+    // CÁLCULO DAS DIMENSÕES DA GRELHA
     const availableWidth = container.getBoundingClientRect().width - 30;
     const cellPixelSize = 40; 
     const gapSize = 6;
     const colTotal = cellPixelSize + gapSize;
 
+    // DETERMINA O NÚMERO DE COLUNAS BASEADO NA LARGURA DISPONÍVEL
     let maxPossibleCols = Math.floor(availableWidth / colTotal);
     let numCols = Math.floor(maxPossibleCols / 6) * 6; 
     if (numCols < 6) numCols = Math.floor(maxPossibleCols / 2) * 2; 
@@ -24,6 +28,7 @@ export function updateGrid() {
     grid.style("grid-template-columns", `repeat(${numCols}, ${cellPixelSize}px)`)
         .style("width", `${finalGridWidth}px`);
 
+    // INICIALIZAÇÃO DO MAPA DE OCUPAÇÃO
     let gridMap = [];   
     let displayList = []; 
     const estimatedRows = Math.ceil(filtered.length * 2); 
@@ -32,6 +37,7 @@ export function updateGrid() {
 
     let gridCursor = 0;
 
+    // MARCA UMA ÁREA DA GRELHA COMO OCUPADA
     function markRegion(index, size) {
         for (let r = 0; r < size; r++) {
             for (let c = 0; c < size; c++) {
@@ -41,6 +47,7 @@ export function updateGrid() {
         }
     }
 
+    // VERIFICA SE UM GLYPH DE TAMANHO 'SIZE' CABE NA POSIÇÃO ATUAL
     function canFit(index, size) {
         const colIndex = index % numCols;
         if (colIndex + size > numCols) return false; 
@@ -53,6 +60,7 @@ export function updateGrid() {
         return true;
     }
 
+    // PREENCHE O RESTO DA LINHA COM ESPAÇO VAZIO (FILLER)
     function forceLineBreak() {
         const colIndex = gridCursor % numCols;
         if (colIndex !== 0) { 
@@ -62,6 +70,7 @@ export function updateGrid() {
                      const colStart = (gridCursor % numCols) + 1;
                      const rowStart = Math.floor(gridCursor / numCols) + 1;
                      markRegion(gridCursor, 1);
+                     // ADICIONA UM BLOCO DE COR SÓLIDA
                      displayList.push({ type: 'filler', style: `grid-column: ${colStart} / span 1; grid-row: ${rowStart} / span 1;` });
                  }
                  gridCursor++;
@@ -69,19 +78,24 @@ export function updateGrid() {
         }
     }
 
+    // PROCESSA A LISTA DE DADOS E TENTA ENCAIXAR NA GRELHA
     function processDataList(listToProcess) {
         let cursor = 0;
         while (cursor < listToProcess.length) {
+            // EXPANDE O MAPA SE NECESSÁRIO
             if (gridCursor + (4 * numCols) >= gridMap.length) {
                 for(let k=0; k < numCols * 10; k++) gridMap.push(false);
             }
+            // AVANÇA SE A CÉLULA JÁ ESTIVER OCUPADA
             if (gridMap[gridCursor]) { gridCursor++; continue; }
 
             const d = listToProcess[cursor];
+            // DETERMINA O TAMANHO DO GLYPH (1x1, 2x2, 3x3)
             let size = cellSizeMap[d.durationCategory] ? cellSizeMap[d.durationCategory].cols : 1;
             if (size > numCols) size = numCols;
 
             if (canFit(gridCursor, size)) {
+                // ENCAIXA O DADO
                 const colStart = (gridCursor % numCols) + 1;
                 const rowStart = Math.floor(gridCursor / numCols) + 1;
                 markRegion(gridCursor, size);
@@ -91,6 +105,7 @@ export function updateGrid() {
                 });
                 cursor++; 
             } else {
+                // NÃO CABE: COLOCA UM FILLER 1x1 E TENTA NO PRÓXIMO SLOT
                 const colStart = (gridCursor % numCols) + 1;
                 const rowStart = Math.floor(gridCursor / numCols) + 1;
                 markRegion(gridCursor, 1);
@@ -100,6 +115,7 @@ export function updateGrid() {
         }
     }
 
+    // LÓGICA DE ORDENAÇÃO POR DURAÇÃO (SEPARA EM TIERS DE TAMANHO)
     if (sortMode === "durationHigh" || sortMode === "durationLow") {
         let tier3 = [], tier2 = [], tier1 = [];
         filtered.forEach(d => {
@@ -107,6 +123,8 @@ export function updateGrid() {
             if (cols > numCols) cols = numCols;
             if (cols === 3) tier3.push(d); else if (cols === 2) tier2.push(d); else tier1.push(d);
         });
+        
+        // ORGANIZA OS TIERS VISUALMENTE
         if (sortMode === "durationHigh") {
             if (tier3.length > 0) { processDataList(tier3); forceLineBreak(); }
             if (tier2.length > 0) { processDataList(tier2); forceLineBreak(); }
@@ -117,19 +135,22 @@ export function updateGrid() {
             if (tier3.length > 0) { processDataList(tier3); }
         }
     } else {
+        // SEM ORDENAÇÃO ESPECIAL POR TAMANHO
         processDataList(filtered);
     }
 
+    // RENDERIZAÇÃO FINAL NO DOM
     grid.html("");
     const items = grid.selectAll(".item").data(displayList).enter().append("div")
         .attr("class", d => d.type === 'data' ? "glyph" : "filler").attr("style", d => d.style);
     
+    // DESENHA O ÍCONE SVG
     items.filter(d => d.type === 'data').html(d => drawIcon(d.data))
         .on("mousemove", (event, d) => showTooltip(event, d.data)).on("mouseleave", hideTooltip);
 }
 
+// DEFINIÇÃO DOS CAMINHOS SVG
 const pixelPaths = {
-
     disk: "M4,14 h16 v2 h-16 z M6,12 h12 v2 h-12 z M8,10 h8 v2 h-8 z",
     triangle: "M11,4 h2 v2 h-2 z M10,6 h4 v2 h-4 z M9,8 h6 v2 h-6 z M8,10 h8 v2 h-8 z M7,12 h10 v2 h-10 z M6,14 h12 v2 h-12 z",
     circle: "M9,4 h6 v2 h-6 z M7,6 h2 v2 h-2 z M15,6 h2 v2 h-2 z M6,8 h1 v8 h-1 z M17,8 h1 v8 h-1 z M7,16 h2 v2 h-2 z M15,16 h2 v2 h-2 z M9,18 h6 v2 h-6 z",
@@ -141,6 +162,7 @@ const pixelPaths = {
     unknown: "M9,6 h6 v2 h-6 z M13,8 h2 v2 h-2 z M13,10 h2 v2 h-2 z M11,12 h4 v2 h-4 z M11,16 h2 v2 h-2 z"
 };
 
+// GERA O SVG DO ÍCONE BASEADO NA FORMA E COR
 function drawIcon(d) {
     const color = countryColors[d.country] || "#f8c200";
     let path = pixelPaths[d.shape] || pixelPaths["unknown"];
