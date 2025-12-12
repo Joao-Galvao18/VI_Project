@@ -6,7 +6,6 @@ import { initTimeline, updateTimeline } from './viz-timeline.js';
 import { initHeatmap, updateHeatmap } from './viz-heatmap.js';
 import { initBar, updateBar } from './viz-bar.js';
 import { initScatter, updateScatter } from './viz-scatter.js';
-import { initPolar, updatePolar } from './viz-polar.js';
 
 let currentView = "glyph";
 let glitchEnabled = true;
@@ -20,7 +19,6 @@ setUpdateCallback(() => {
     else if (currentView === "heatmap") updateHeatmap();
     else if (currentView === "bar") updateBar();
     else if (currentView === "scatter") updateScatter();
-    else if (currentView === "polar") updatePolar();
 });
 
 //INICIALIZA
@@ -46,7 +44,6 @@ d3.selectAll(".mode").on("click", function() {
     else if (mode === "HEATMAP") switchView("heatmap");
     else if (mode === "BAR") switchView("bar");
     else if (mode === "SCATTER") switchView("scatter");
-    else if (mode === "RADIAL") switchView("polar");
     else switchView("glyph");
 });
 
@@ -70,14 +67,12 @@ function switchView(viewName) {
     d3.select("#view-heatmap").style("display", "none");
     d3.select("#view-bar").style("display", "none");
     d3.select("#view-scatter").style("display", "none");
-    d3.select("#view-polar").style("display", "none");
     
 //ESCONDE OS CONTROLOS DO HEADER
     d3.select("#map-controls").style("display", "none");
     d3.select("#glyph-controls").style("display", "none");
     d3.select("#heatmap-controls").style("display", "none");
     d3.select("#bar-controls").style("display", "none");
-    d3.select("#polar-controls").style("display", "none");
 
 //LOGICA DE TROCAR OS CONTROLOS DEPENDENDO DE CADA VISUALIZACAO
     if (viewName === "glyph") {
@@ -114,12 +109,6 @@ function switchView(viewName) {
         d3.select("#view-scatter").style("display", "block");
         d3.select("#view-title").text("DURATION CORRELATION");
         initScatter();
-
-    } else if (viewName === "polar") { 
-        d3.select("#view-polar").style("display", "block");
-        d3.select("#polar-controls").style("display", "flex");
-        d3.select("#view-title").text("RADIAL CENSUS");
-        initPolar();
 
     } else {
         d3.select("#view-glyph").style("display", "block");
@@ -215,6 +204,5 @@ window.addEventListener("resize", () => {
         else if (currentView === "heatmap") initHeatmap();
         else if (currentView === "bar") initBar();
         else if (currentView === "scatter") updateScatter();
-        else if (currentView === "polar") initPolar();
     }, 100);
 });
